@@ -89,4 +89,5 @@ test.describe("Products", () => {
   test("TC038: Data consistency multi-load", async ({ page }) => {});
   test("TC039: Search result accuracy", async ({ page }) => {});
   test("TC040: Product click middle rows", async ({ page }) => {});
+  test("TC041: Rapid product navigation", async ({ page }) => {});
 });
