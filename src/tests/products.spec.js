@@ -42,7 +42,7 @@ test.describe("Products List Page", () => {
       await expect(productsPage.getAddProductButton()).toBeVisible();
     });
     await test.step("Verify table headers", async () => {
-      for (const header of productsPage.getTableHeaders()) {
+      for (let header of productsPage.getTableHeaders()) {
         await expect(header).toBeVisible();
       }
     });
