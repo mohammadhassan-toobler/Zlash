@@ -25,7 +25,6 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL: process.env.BASE_URL,
-
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
     headless: false,
@@ -33,6 +32,10 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    {
+      name: "setup",
+      testMatch: /.*\.setup\.js/,
+    },
     // {
     //   name: "chromium",
     //   use: { ...devices["Desktop Chrome"] },
@@ -40,7 +43,12 @@ export default defineConfig({
 
     {
       name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
+      use: {
+        ...devices["Desktop Firefox"],
+        baseURL: process.env.BASE_URL,
+        storageState: "storageState.json",
+        dependencies: ["setup"],
+      },
     },
 
     // {
