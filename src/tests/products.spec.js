@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { ProductsPage } from "../pages/ProductsPage";
 import { LoginPage } from "../pages/LoginPage";
-let productsPage;
+let productsPage, filteredCount;
 test.describe("Dashboard Page", () => {
   test.beforeEach(async ({ page }) => {
     test.step("Launch", async () => {
@@ -50,63 +50,72 @@ test.describe("Products List Page", () => {
   test("TC004: Verify Products table displays all columns", async ({
     page,
   }) => {
-    const productRows = page.locator("table tbody tr");
-    await expect(productRows.first()).toBeVisible();
-    const totalRows = await productRows.count();
-    if (totalRows == 0) {
-      test.skip(true, "No products present. Skipping product table test.");
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+    });
+
+    await test.step("Skip the test if there are no products are present", async () => {
+      if (productsPage.getAllRowCount() == 0) {
+        test.skip(true, "No products present. Skipping product table test.");
+      }
+    });
+
+    await test.step("Verify that every product has value", async () => {
+      const products = await productsPage.getAllProductsData();
+      for (const product of products) {
+        expect(product.name).toBeDefined();
+        expect(product.price).toBeDefined();
+        expect(product.progressState).toBeDefined();
+        expect(product.availability).toBeDefined();
+        expect(product.availableUnits).toBeDefined();
+      }
+    });
+  });
+  test("TC005: Verify search functionality for products", async ({ page }) => {
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+    });
+
+    await test.step("Skip the test if there are no products are present", async () => {
+      if (productsPage.getAllRowCount() == 0) {
+        test.skip(true, "No products present. Skipping product table test.");
+      }
+    });
+
+    await test.step("Search the Initial Product", async () => {
+      await productsPage.searchRandomProduct();
+    });
+
+    await test.step("Re-calculate rows after search", async () => {
+      filteredCount = productsPage.getAllRowCount();
+    });
+
+    // Verify the search result
+    for (let i = 0; i < filteredCount; i++) {
+      await expect(filteredCount.nth(i).locator("td").nth(1)).toHaveText(
+        productsPage.searchRandomProduct(),
+      );
     }
-    const products = [];
-    for (let i = 0; i < totalRows; i++) {
-      const cells = productRows.nth(i).locator("td");
-      const productData = {
-        name: await cells.nth(1).textContent(),
-        price: await cells.nth(2).textContent(),
-        progressState: await cells.nth(3).textContent(),
-        availablity: await cells.nth(4).textContent(),
-        availableUnits: await cells.nth(5).textContent(),
-      };
-      products.push(productData);
-    }
-    products.forEach((products) => {
-      expect(products.name).toBeDefined();
-      expect(products.price).toBeDefined();
-      expect(products.progressState).toBeDefined();
-      expect(products.availablity).toBeDefined();
-      expect(products.availableUnits).toBeDefined();
+  });
+  test("TC006: Verify search box can be cleared", async ({ page }) => {
+    await test.step("Search the Initial Product", async () => {
+      await productsPage.searchRandomProduct();
+    });
+
+    await test.step("Re-calculate rows after search", async () => {
+      filteredCount = productsPage.getAllRowCount();
+    });
+
+    await test.step("Clear the search", async () => {
+      await productsPage.clearSearchInput();
+    });
+
+    await test.step("Verify the search results cleared", async () => {
+      expect(filteredCount).not.toEqual(productsPage.getAllRowCount());
     });
   });
 });
 
-test("TC005: Verify search functionality for products", async ({ page }) => {
-  const productRows = page.locator("table tbody tr");
-  const totalRows = await productRows.count();
-  if (totalRows == 0) {
-    test.skip(true, "No products present. Skipping search test.");
-  }
-  const cells = productRows.nth(0).locator("td");
-  const initialProduct = await cells.nth(1).textContent();
-  // Search the initial Product
-  await page.getByPlaceholder("Search Products").fill(initialProduct);
-  // Re-locate rows after search
-  const filteredRows = page.locator("table tbody tr");
-  const filteredCount = await filteredRows.count();
-  // Verify the search result
-  for (let i = 0; i < filteredCount; i++) {
-    await expect(filteredRows.nth(i).locator("td").nth(1)).toHaveText(
-      initialProduct,
-    );
-  }
-});
-test("TC006: Verify search box can be cleared", async ({ page }) => {
-  await page.getByPlaceholder("Search Products").fill("casio");
-  const filteredRows = page.locator("table tbody tr");
-  const filteredCount = await filteredRows.count();
-  await page.getByPlaceholder("Search Products").clear();
-  const productRows = page.locator("table tbody tr");
-  const totalRows = await productRows.count();
-  expect(filteredCount).not.toEqual(totalRows);
-});
 test("TC007: Verify clicking product navigates to details", async ({
   page,
 }) => {
