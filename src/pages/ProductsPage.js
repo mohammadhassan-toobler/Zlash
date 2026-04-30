@@ -9,6 +9,9 @@ class ProductsPage {
     this.cells = this.productRows.locator("td");
     this.addProductButton = page.getByRole("button", { name: "Add Products" });
     this.searchInput = page.getByPlaceholder("Search Products");
+    this.productDetailsHeader = page.getByRole("heading", {
+      name: "Product Details",
+    });
   }
   getProductsMenu() {
     return this.productsMenu;
@@ -21,6 +24,9 @@ class ProductsPage {
   }
   getSearchBar() {
     return this.searchInput;
+  }
+  getAllProductRows() {
+    return this.productRows;
   }
   getTableHeaders() {
     const tableHeaders = [
@@ -36,36 +42,9 @@ class ProductsPage {
   async navigateToProducts() {
     await this.productsMenu.click();
   }
-  async verifyProductsTable() {
-    const productRows = page.locator("table tbody tr");
-    await expect(productRows.first()).toBeVisible();
-    const totalRows = await productRows.count();
-    if (totalRows == 0) {
-      test.skip(true, "No products present. Skipping product table test.");
-    }
-    const products = [];
-    for (let i = 0; i < totalRows; i++) {
-      const cells = productRows.nth(i).locator("td");
-      const productData = {
-        name: await cells.nth(1).textContent(),
-        price: await cells.nth(2).textContent(),
-        progressState: await cells.nth(3).textContent(),
-        availablity: await cells.nth(4).textContent(),
-        availableUnits: await cells.nth(5).textContent(),
-      };
-      products.push(productData);
-    }
-    products.forEach((products) => {
-      expect(products.name).toBeDefined();
-      expect(products.price).toBeDefined();
-      expect(products.progressState).toBeDefined();
-      expect(products.availablity).toBeDefined();
-      expect(products.availableUnits).toBeDefined();
-    });
-  }
   async getAllProductsData() {
     const products = [];
-    for (let i = 0; i < this.productRows.count; i++) {
+    for (let i = 0; i < this.productRows.count(); i++) {
       const cells = this.productRows.nth(i).locator("td");
       const productData = {
         name: await cells.nth(1).textContent(),
@@ -76,6 +55,30 @@ class ProductsPage {
       products.push(productData);
     }
     return products;
+  }
+  async searchRandomProduct() {
+    const cells = this.productRows.nth(1).locator("td");
+    const initialProduct = await cells.nth(1).textContent();
+    // Search the initial Product
+    await this.searchInput.fill(initialProduct);
+    return initialProduct;
+  }
+  async getAllRowCount() {
+    await this.productRows.count();
+  }
+  async clearSearchInput() {
+    await this.searchInput.clear();
+  }
+  async clickFirstProduct() {
+    const productRows = page.locator("table tbody tr");
+    const cells = productRows.nth(0).locator("td");
+    await cells.nth(1).click();
+  }
+  getProductDetailsHeader() {
+    return this.productDetailsHeader;
+  }
+  async navigateToAddProducts() {
+    await this.addProductButton().click();
   }
 }
 export { ProductsPage };
