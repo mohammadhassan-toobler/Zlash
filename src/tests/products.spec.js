@@ -66,7 +66,7 @@ test.describe("Products List Page", () => {
         availablity: await cells.nth(4).textContent(),
         availableUnits: await cells.nth(5).textContent(),
       };
-      products.push(productData);
+      products.push(productData); //
     }
     products.forEach((products) => {
       expect(products.name).toBeDefined();
