@@ -1,5 +1,3 @@
-import { expect } from "@playwright/test";
-
 class LoginPage {
   constructor(page) {
     this.page = page;
