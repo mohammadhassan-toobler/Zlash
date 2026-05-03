@@ -40,6 +40,6 @@ export class LocatorManager {
         throw new Error(`Invalid selector configuration provided: ${JSON.stringify(selectorObj)}`);
       }
   
-      return loc;
+      return loc.first();
     }
   }
