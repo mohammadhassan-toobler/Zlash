@@ -8,7 +8,7 @@ class LoginPage {
     this.otpInput = page.getByRole("textbox", { name: "pin code 1 of 4" });
     this.verifyOTPButton = page.getByRole("button", { name: "Verify OTP" });
   }
-  async LanuchURL(url = "/") {
+  async LaunchURL(url = "/") {
     await this.page.goto(url);
   }
   async OTPLogin(

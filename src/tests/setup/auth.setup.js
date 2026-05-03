@@ -5,7 +5,7 @@ test("Authenticate and save session", async ({ page }) => {
   const loginPage = new LoginPage(page);
 
   await test.step("Launch the URL", async () => {
-    await loginPage.LanuchURL();
+    await loginPage.LaunchURL();
   });
 
   await test.step("Login the Application", async () => {
