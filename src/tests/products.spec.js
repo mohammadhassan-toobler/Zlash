@@ -24,10 +24,10 @@ test.describe("Dashboard Page", () => {
     });
   });
 });
-test.describe("Products List Page", () => {
+test.describe.only("Products List Page", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
     productsPage = new ProductsPage(page);
+    await page.goto("/");
     await test.step("Navigate to the Product Menu", async () => {
       await productsPage.navigateToProducts();
     });
@@ -90,12 +90,13 @@ test.describe("Products List Page", () => {
       filteredCount = productsPage.getAllRowCount();
     });
 
-    // Verify the search result
-    for (let i = 0; i < filteredCount; i++) {
-      await expect(filteredCount.nth(i).locator("td").nth(1)).toHaveText(
-        productsPage.searchRandomProduct(),
-      );
-    }
+    await test.step("Verify the search result", async () => {
+      for (let i = 0; i < filteredCount; i++) {
+        await expect(filteredCount.nth(i).locator("td").nth(1)).toHaveText(
+          productsPage.searchRandomProduct(),
+        );
+      }
+    });
   });
   test("TC006: Verify search box can be cleared", async ({ page }) => {
     await test.step("Search the Initial Product", async () => {
@@ -114,44 +115,37 @@ test.describe("Products List Page", () => {
       expect(filteredCount).not.toEqual(productsPage.getAllRowCount());
     });
   });
+  test("TC007: Verify clicking product navigates to details", async ({
+    page,
+  }) => {
+    await test.step("Click the First Product from the table", async () => {
+      productsPage.clickFirstProduct();
+    });
+    await test.step("Verify that user is in Products detail page", async () => {
+      await expect(productsPage.getProductDetailsHeader()).toHaveText(
+        "Product Details",
+      );
+    });
+  });
+  test.only("TC008: Verify product details are displayed", async ({ page }) => {
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+    });
+    await test.step("Verify product details are displayed", async () => {
+      const productName = await productsPage.getProductDetails().productName;
+      console.log(productName);
+      const productPrice = await productsPage.getProductDetails().productPrice;
+      const progressState =
+        await productsPage.getProductDetails().progressState;
+      const Availability = await productsPage.getProductDetails().Availability;
+      await expect(productName).toBeDefined();
+      await expect(productPrice).toBeDefined();
+      await expect(progressState).toBeDefined();
+      await expect(Availability).toBeDefined();
+    });
+  });
 });
 
-test("TC007: Verify clicking product navigates to details", async ({
-  page,
-}) => {
-  const productRows = page.locator("table tbody tr");
-  const cells = productRows.nth(0).locator("td");
-  await cells.nth(1).click();
-  await expect(
-    page.getByRole("heading", { name: "Product Details" }),
-  ).toHaveText("Product Details");
-});
-test("TC008: Verify product details are displayed", async ({ page }) => {
-  const productName = await page
-    .locator("term:has-text('Price')")
-    .locator("..")
-    .locator("definition")
-    .textContent();
-  const productPrice = await page
-    .locator("term:has-text('Price')")
-    .locator("..")
-    .locator("definition")
-    .textContent();
-  const progressState = await page
-    .locator("term:has-text('Progress Status')")
-    .locator("..")
-    .locator("definition")
-    .textContent();
-  const Availability = await page
-    .locator("term:has-text('Available')")
-    .locator("..")
-    .locator("definition")
-    .textContent();
-  expect(productName).toBeDefined();
-  expect(productPrice).toBeDefined();
-  expect(progressState).toBeDefined();
-  expect(Availability).toBeDefined();
-});
 test("TC009: Verify back to product list navigation", async ({ page }) => {
   await page.getByRole("link", { name: "Back to Product List" }).click();
   expect(page.locator("h2").filter({ hasText: "Products Lists" }).first());
