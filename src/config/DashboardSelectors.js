@@ -2,18 +2,18 @@
 
 export const DASHBOARD_SELECTORS = {
   PAGE_TITLE: {
-    dataTest: 'page-title',
-    text: 'Dashboard',
-    xpath: '//heading[contains(text(), "Dashboard")]',
+    // FIX 1: Look specifically for the heading, ignoring the sidebar text
+    role: { role: 'heading', name: 'Dashboard' }, 
+    xpath: '//h2[contains(text(), "Dashboard")]',
   },
   STORE_NAME: {
     dataTest: 'store-name',
-    text: 'VYBE Men', 
+    text: 'C R O W N ▽ N E X U S', 
     cssClass: 'store-name',
   },
   STORE_EMAIL: {
     dataTest: 'store-email',
-    text: 'vybemen@gmail.com',
+    text: 'nexusli@2.trend.com',
     cssClass: 'store-email',
   },
   STORE_STATUS_VALUE: {
@@ -29,8 +29,8 @@ export const DASHBOARD_SELECTORS = {
     cssClass: 'btn-go-to-store',
   },
   PRODUCTS_LINK: {
-    dataTest: 'products-menu',
+    // FIX 2: Look specifically for the <a> link role, ignoring the inner span
     role: { role: 'link', name: /products/i },
-    text: 'Products',
+    xpath: '//a[contains(@href, "/admin/product")]'
   }
 };
