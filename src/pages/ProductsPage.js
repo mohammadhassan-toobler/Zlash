@@ -12,6 +12,22 @@ class ProductsPage {
     this.productDetailsHeader = page.getByRole("heading", {
       name: "Product Details",
     });
+    this.productNameData = page
+      .locator("term:has-text('Price')")
+      .locator("..")
+      .locator("definition");
+    this.productPriceData = page
+      .locator("term:has-text('Price')")
+      .locator("..")
+      .locator("definition");
+    this.progressStateData = page
+      .locator("term:has-text('Progress Status')")
+      .locator("..")
+      .locator("definition");
+    this.availabilityData = page
+      .locator("term:has-text('Available')")
+      .locator("..")
+      .locator("definition");
   }
   getProductsMenu() {
     return this.productsMenu;
@@ -70,8 +86,7 @@ class ProductsPage {
     await this.searchInput.clear();
   }
   async clickFirstProduct() {
-    const productRows = page.locator("table tbody tr");
-    const cells = productRows.nth(0).locator("td");
+    const cells = this.productRows.nth(0).locator("td");
     await cells.nth(1).click();
   }
   getProductDetailsHeader() {
@@ -79,6 +94,13 @@ class ProductsPage {
   }
   async navigateToAddProducts() {
     await this.addProductButton().click();
+  }
+  async getProductDetails() {
+    const productName = await this.productNameData.textContent();
+    const productPrice = await this.productPriceData.textContent();
+    const progressState = await this.progressStateData.textContent();
+    const Availability = await this.availabilityData.textContent();
+    return (productName, productPrice, progressState, Availability);
   }
 }
 export { ProductsPage };
