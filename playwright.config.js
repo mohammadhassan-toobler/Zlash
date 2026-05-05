@@ -25,8 +25,9 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL: process.env.BASE_URL,
+    screenshot: "only-on-failure",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    trace: "only-on-failure",
     headless: false,
   },
 
@@ -45,6 +46,7 @@ export default defineConfig({
         dependencies: ["setup"],
       },
     },
+    
 
     // {
     //   name: "firefox",
