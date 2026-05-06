@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { ProductsPage } from "../pages/ProductsPage";
-import { LoginPage } from "../pages/LoginPage";
 let productsPage, filteredCount;
 test.describe("Dashboard Page", () => {
   test.beforeEach(async ({ page }) => {
-    test.step("Launch", async () => {
+    await test.step("Launch", async () => {
       await page.goto("/");
     });
 
@@ -23,13 +22,24 @@ test.describe("Dashboard Page", () => {
       productsPage.getProductListHeader();
     });
   });
+  test("TC020: Verify invalid product ID handling", async ({ page }) => {
+    await test.step("Navigate to invalid product id", async () => {
+      await productsPage.navigateToInvalidProductId();
+    });
+    await test.step("Verify the error message appears or not", async () => {
+      await expect(productsPage.getErrorMessage()).toBeVisible();
+    });
+  });
 });
-test.describe.only("Products List Page", () => {
+test.describe("Products List Page", () => {
   test.beforeEach(async ({ page }) => {
     productsPage = new ProductsPage(page);
     await page.goto("/");
     await test.step("Navigate to the Product Menu", async () => {
       await productsPage.navigateToProducts();
+    });
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
     });
   });
   test("TC003: Verify Products page layout and all elements", async ({
@@ -47,6 +57,7 @@ test.describe.only("Products List Page", () => {
       }
     });
   });
+
   test("TC004: Verify Products table displays all columns", async ({
     page,
   }) => {
@@ -71,11 +82,177 @@ test.describe.only("Products List Page", () => {
       }
     });
   });
-  test("TC005: Verify search functionality for products", async ({ page }) => {
+
+  test("TC007: Verify clicking product navigates to details", async ({
+    page,
+  }) => {
+    await test.step("Click the First Product from the table", async () => {
+      await productsPage.clickFirstProduct();
+    });
+    await test.step("Verify that user is in Products detail page", async () => {
+      await expect(productsPage.getProductDetailsHeader()).toHaveText(
+        "Product Details",
+      );
+    });
+  });
+
+  test("TC011: Verify products have price values", async ({ page }) => {
+    await test.step("Verify the price is present", async () => {
+      const products = await productsPage.getAllProductsData();
+      for (const product of products) {
+        expect(product.price).toBeTruthy();
+        expect(product.price).toMatch(/[₹\d]/);
+      }
+    });
+  });
+
+  test("TC012: Verify products progress status", async ({ page }) => {
+    await test.step("Verify the availability status", async () => {
+      const products = await productsPage.getAllProductsData();
+      for (const product of products) {
+        const status = product.progressState?.trim();
+        expect(["Draft", "Published", "Rejected", "Under Review"]).toContain(
+          status,
+        );
+      }
+    });
+  });
+
+  test("TC013: Verify products availability status", async ({ page }) => {
+    await test.step("Verify the availability status", async () => {
+      const products = await productsPage.getAllProductsData();
+      for (const product of products) {
+        const availability = product.availability?.trim();
+        expect(["Available", "Unavailable"]).toContain(availability);
+      }
+    });
+  });
+
+  test("TC014: Verify Add Products button visible and clickable", async ({
+    page,
+  }) => {
+    await test.step("Verify the Add product button is visible", async () => {
+      await expect(productsPage.getAddProductButton()).toBeVisible();
+    });
+
+    await test.step("Add Product button is clickable", async () => {
+      expect(await productsPage.getAddProductButton().isEnabled()).toBe(true);
+    });
+  });
+
+  test("TC016: Verify table column structure", async ({ page }) => {
+    await test.step("Assert there are 6 colums", async () => {
+      expect(await productsPage.getColumnCount()).toBe(6);
+    });
+  });
+
+  test("TC017: Verify product images display", async ({ page }) => {
+    await test.step("Verify product images display", async () => {
+      const imageVisible = await productsPage
+        .getProductImage()
+        .isVisible()
+        .catch(() => false);
+      expect(imageVisible).toBe(true);
+    });
+  });
+
+  test("TC026: Price formatting consistency", async ({ page }) => {
+    const products = await productsPage.getAllProductsData();
+    for (let product of products) {
+      expect(product.price).toMatch(/[₹$\d.]/);
+    }
+  });
+});
+test.describe("Products Detail Page", async () => {
+  let initialRowCount;
+  test.beforeEach(async ({ page }) => {
+    productsPage = new ProductsPage(page);
+    await page.goto("/");
+    await test.step("Navigate to the Product Menu", async () => {
+      await productsPage.navigateToProducts();
+    });
     await test.step("Check the First Row is Visible", async () => {
       await expect(productsPage.getAllProductRows().first()).toBeVisible();
     });
+    await test.step("Count rows before clicking the first product", async () => {
+      initialRowCount = await productsPage.getAllRowCount();
+      return initialRowCount;
+    });
+    await test.step("Click the First Product from the table", async () => {
+      await productsPage.clickFirstProduct();
+    });
+    await test.step("Verify that user is in Products detail page", async () => {
+      await expect(productsPage.getProductDetailsHeader()).toHaveText(
+        "Product Details",
+      );
+    });
+  });
+  test("TC008: Verify product details are displayed", async ({ page }) => {
+    await test.step("Verify product details are displayed", async () => {
+      const productName = await productsPage.getProductDetailsName();
+      const productPrice = await productsPage.getProductDetailsPrice();
+      const progressState = await productsPage.getProductDetailsProgressState();
+      const Availability = await productsPage.getProductDetailsAvailability();
+      expect(productName).toBeDefined();
+      expect(productPrice).toBeDefined();
+      expect(progressState).toBeDefined();
+      expect(Availability).toBeDefined();
+    });
+  });
+  test("TC009: Verify back to product list navigation", async ({ page }) => {
+    await test.step("Click the Back to Product List Button", async () => {
+      await productsPage.navigateBackToProductsListButton();
+    });
+    await test.step("Verify that the user navigated to the Products list page", async () => {
+      expect(productsPage.getProductListHeader());
+    });
+  });
+  test("TC010: Verify Edit Product button on details page", async ({
+    page,
+  }) => {
+    await test.step("Verify Edit Product button on details page", async () => {
+      await expect(productsPage.getEditProductButton()).toBeVisible();
+    });
+  });
+  test("TC015: Verify list consistency after navigation", async ({ page }) => {
+    let finalRowCount;
+    await test.step("Click the Back to Product List Button", async () => {
+      await productsPage.navigateBackToProductsListButton();
+    });
+    await test.step("Verify that the user is in product list page", async () => {
+      await expect(productsPage.getProductListHeader()).toBeVisible();
+    });
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+    });
+    await test.step("Count rows after coming back to Product List page", async () => {
+      finalRowCount = await productsPage.getAllRowCount();
+    });
+    await test.step("Verify the count is correct", async () => {
+      expect(finalRowCount).toBe(initialRowCount);
+    });
+  });
+});
+test.describe("Filters", async () => {
+  let products, filteredCount;
+  test.beforeEach(async ({ page }) => {
+    productsPage = new ProductsPage(page);
+    await test.step("Launch", async () => {
+      await page.goto("/");
+    });
+    await test.step("Navigate to the Product Menu", async () => {
+      await productsPage.navigateToProducts();
+    });
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+    });
+    await test.step("Get the product Data", async () => {
+      products = await productsPage.getAllProductsData();
+      return await products;
+    });
+  });
 
+  test("TC005: Verify search functionality for products", async () => {
     await test.step("Skip the test if there are no products are present", async () => {
       if (productsPage.getAllRowCount() == 0) {
         test.skip(true, "No products present. Skipping product table test.");
@@ -98,7 +275,8 @@ test.describe.only("Products List Page", () => {
       }
     });
   });
-  test("TC006: Verify search box can be cleared", async ({ page }) => {
+
+  test("TC006: Verify search box can be cleared", async () => {
     await test.step("Search the Initial Product", async () => {
       await productsPage.searchRandomProduct();
     });
@@ -115,234 +293,123 @@ test.describe.only("Products List Page", () => {
       expect(filteredCount).not.toEqual(productsPage.getAllRowCount());
     });
   });
-  test("TC007: Verify clicking product navigates to details", async ({
-    page,
-  }) => {
-    await test.step("Click the First Product from the table", async () => {
-      productsPage.clickFirstProduct();
+
+  test("TC019: Verify filter dropdowns visible", async () => {
+    await test.step("Verify the Status Dropdown is present", async () => {
+      await expect(productsPage.getallStatusFilter()).toBeVisible();
     });
-    await test.step("Verify that user is in Products detail page", async () => {
-      await expect(productsPage.getProductDetailsHeader()).toHaveText(
-        "Product Details",
-      );
+    await test.step("Verify Progress status filter is present", async () => {
+      await expect(productsPage.getProgressStateFilter()).toBeVisible();
     });
   });
-  test.only("TC008: Verify product details are displayed", async ({ page }) => {
+
+  test("TC021: Search with special characters (@#$%)", async () => {
+    // Search the special characters
+    await test.step("Search with special Character", async () => {
+      await productsPage.searchWithSpecialCharacter();
+    });
+    await test.step("Assert the filtered values", async () => {
+      for (let product of products) {
+        expect(product.name).toContain("_");
+      }
+    });
+  });
+
+  test("TC022: Search with empty string", async () => {
+    await test.step("Search with empty String", async () => {
+      await productsPage.searchWithEmptyString();
+    });
+    await test.step("Verify the empty string searches anything", async () => {});
+    const filteredProducts = await productsPage.getAllProductsData();
+    expect(filteredProducts).toEqual(products);
+  });
+
+  test("TC023: Search with whitespace", async ({ page }) => {
+    await test.step("Search with white spaces", async () => {
+      await productsPage.searchWithWhiteSpaces();
+    });
+    await test.step("Verify the search results", async () => {
+      const filteredProducts = await productsPage.getAllProductsData();
+      expect(filteredProducts).toEqual(products);
+    });
+  });
+  test("TC024: Search case-insensitive", async ({ page }) => {
+    let upperResult, lowerResult, mixedResult;
+    const productName = "iphone";
+    await test.step("Search with the Upper cases", async () => {
+      await productsPage.search(productName.toUpperCase());
+    });
     await test.step("Check the First Row is Visible", async () => {
       await expect(productsPage.getAllProductRows().first()).toBeVisible();
     });
-    await test.step("Verify product details are displayed", async () => {
-      const productName = await productsPage.getProductDetails().productName;
-      console.log(productName);
-      const productPrice = await productsPage.getProductDetails().productPrice;
-      const progressState =
-        await productsPage.getProductDetails().progressState;
-      const Availability = await productsPage.getProductDetails().Availability;
-      await expect(productName).toBeDefined();
-      await expect(productPrice).toBeDefined();
-      await expect(progressState).toBeDefined();
-      await expect(Availability).toBeDefined();
+    await test.step("Store the first product", async () => {
+      upperResult = await productsPage.getFirstProductName();
+    });
+    await test.step("Clear the search", async () => {
+      await productsPage.clearSearchInput();
+    });
+    await test.step("Search with lower case", async () => {
+      await productsPage.search(productName.toLowerCase());
+    });
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+    });
+    await test.step("Store the first product", async () => {
+      lowerResult = await productsPage.getFirstProductName();
+    });
+    await test.step("Clear the search", async () => {
+      await productsPage.clearSearchInput();
+    });
+    await test.step("Search with mixed case", async () => {
+      await productsPage.search("IpHoNe");
+    });
+    await test.step("Check the First Row is Visible", async () => {
+      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+    });
+    await test.step("Store the first product", async () => {
+      mixedResult = await productsPage.getFirstProductName();
+    });
+    await test.step("Assert the rows", async () => {
+      expect(upperResult).toBe(lowerResult);
+      expect(lowerResult).toBe(mixedResult);
+    });
+  });
+  test("TC066: Product availability filtering", async ({ page }) => {
+    await test.step("Select the Status by Available", async () => {
+      await productsPage.filterByAllStatus("Available");
+    });
+    await test.step("Assert the values", async () => {
+      await expect
+        .poll(async () => {
+          const data = await productsPage.getAllProductsData();
+          return (
+            data.length > 0 && data.every((p) => p.availability === "Available")
+          );
+        })
+        .toBe(true);
+    });
+  });
+  test("TC081: Product progress state filtering", async ({ page }) => {
+    await test.step("Select the Status by Available", async () => {
+      await productsPage.filterByProogressStatus("Draft");
+    });
+    await test.step("Assert the values", async () => {
+      await expect
+        .poll(async () => {
+          const data = await productsPage.getAllProductsData();
+          return (
+            data.length > 0 && data.every((p) => p.progressState === "Draft")
+          );
+        })
+        .toBe(true);
     });
   });
 });
 
-test("TC009: Verify back to product list navigation", async ({ page }) => {
-  await page.getByRole("link", { name: "Back to Product List" }).click();
-  expect(page.locator("h2").filter({ hasText: "Products Lists" }).first());
-});
-test("TC010: Verify Edit Product button on details page", async ({ page }) => {
-  await expect(
-    page.getByRole("button", { name: "Edit Product" }),
-  ).toBeVisible();
-});
-test("TC011: Verify products have price values", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Verify the price value
-  const productRows = page.locator("table tbody tr");
-  const cells = productRows.nth(0).locator("td");
-  const productData = {
-    price: await cells.nth(2).textContent(),
-  };
-  products.push(productData);
-  productData.forEach((products) => {
-    expect(products.price).toBeTruthy();
-    expect(products.price).toMatch(/[₹\d]/);
-  });
-});
-test("TC012: Verify products progress status", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Verify the progress status
-  const productRows = page.locator("table tbody tr");
-  const cells = productRows.nth(0).locator("td");
-  const productData = {
-    price: await cells.nth(3).textContent(),
-  };
-  products.push(productData);
-  productData.forEach((products) => {
-    const status = products.progressStatus?.trim();
-    expect(["Draft", "Published", "Rejected", "Under Review"]).toContain(
-      status,
-    );
-  });
-});
-test("TC013: Verify products availability status", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Verify the progress status
-  const productRows = page.locator("table tbody tr");
-  const cells = productRows.nth(0).locator("td");
-  const productData = {
-    price: await cells.nth(4).textContent(),
-  };
-  products.push(productData);
-  productData.forEach((products) => {
-    const availability = products.progressStatus?.trim();
-    expect(["Available", "Unavailable"]).toContain(availability);
-  });
-});
-test("TC014: Verify Add Products button visible and clickable", async ({
-  page,
-}) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Verify the Add product button is visible
-  await expect(
-    page.getByRole("button", { name: "Add Products" }),
-  ).toBeVisible();
-  // Add Product button is clickable
-  expect(page.getByRole("button", { name: "Add Products" }).isEnabled()).toBe(
-    true,
-  );
-});
-test("TC015: Verify list consistency after navigation", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Count the total rows
-  const productRows = page.locator("table tbody tr");
-  const initialRowCount = productRows.count();
-  // Click the first product
-  const cells = productRows.nth(0).locator("td");
-  await cells.nth(1).click();
-  // Check whether you are in product detail page or not
-  await expect(
-    page.getByRole("heading", { name: "Product Details" }),
-  ).toBeVisible();
-  // Click the Back to Product list
-  await page.getByRole("link", { name: "Back to Product List" }).click();
-  // Verify that you are in Product list page
-  await expect(
-    page.getByRole("heading", { name: "Products Lists" }),
-  ).toBeVisible();
-  // Count the rows after navigation
-  await expect(productRows.first()).toBeVisible();
-  const finalRowCount = productRows.count();
-  // Assert the inital and final row counts
-  expect(finalRowCount).toBe(initialRowCount);
-});
-test("TC016: Verify table column structure", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Count the total columns
-  const firstRow = page.locator("table tbody tr").first();
-  const cells = firstRow.locator("td");
-  const totalColumn = cells.count();
-  // Assert the Column count by 6
-  expect(totalColumn).toBe(6);
-});
-test("TC017: Verify product images display", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Get first product image
-  const productImage = page
-    .locator("table tbody tr")
-    .first()
-    .locator("img")
-    .first();
-  // Verify image is visible
-  const imageVisible = await productImage.isVisible().catch(() => false);
-  expect(imageVisible).toBe(true);
-});
 test("TC018: Verify pagination/scrolling behavior", async ({ page }) => {});
-test("TC019: Verify filter dropdowns visible", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Verify the Status Dropdown is present
-  await expect(page.getByText("All Status")).toBeVisible();
-  // Verify Progress Status Dropdown is present
-  await expect(page.getByText("Progress Status")).toBeVisible();
-});
-test("TC020: Verify invalid product ID handling", async ({ page }) => {
-  await page.goto("http://d1cfp5hosozeex.cloudfront.net/admin/product/897789", {
-    waitUntil: "networkidle",
-  });
-  await expect(
-    page.getByText("Data do not exists", { exact: true }).toBeVisible(),
-  );
-});
-test("TC021: Search with special characters (@#$%)", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Search the special characters
-  await page.getByPlaceholder("Search Products").fill("@$/");
-  await expect(page.getByText("No Data Found", { exact: true })).toBeVisible();
-});
-test("TC022: Search with empty string", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Search with empty String
-  await page.getByPlaceholder("Search Products").fill("");
-  await expect(page.getByText("No Data Found", { exact: true })).toBeVisible();
-});
-test("TC023: Search with whitespace", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Search with white spaces
-  await page.getByPlaceholder("Search Products").fill("   ");
-  await expect(page.getByText("No Data Found", { exact: true })).toBeVisible();
-});
-test("TC024: Search case-insensitive", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Count the initial rows
-  const productRows = page.locator("table tbody tr");
-  const initialRowCount = productRows.count();
-  // Search with Upper Cases
-  await page.getByPlaceholder("Search Products").fill("CASIO");
-  await expect(productRows.first()).toBeVisible();
-  // Count after the search
-  const finalRowCount = productRows.count();
-  expect(finalRowCount).toBeLessThan(initialRowCount);
-  // Clear the search
-  await page.getByPlaceholder("Search Products").clear();
-  // Search with lower Case
-  await page.getByPlaceholder("Search Products").fill("casio");
-  await expect(productRows.first()).toBeVisible();
-  // Count after the search
-  const finalRowCount1 = productRows.count();
-  expect(finalRowCount1).toBeLessThan(initialRowCount);
-  // Clear the search
-  await page.getByPlaceholder("Search Products").clear();
-  // Search with Mixed Case
-  await page.getByPlaceholder("Search Products").fill("CasIo");
-  await expect(productRows.first()).toBeVisible();
-  // Count after the search
-  const finalRowCount2 = productRows.count();
-  expect(finalRowCount2).toBeLessThan(initialRowCount);
-});
+
 test("TC025: Product name truncation", async ({ page }) => {});
-test("TC026: Price formatting consistency", async ({ page }) => {
-  // Navigate to products
-  productsPage.navigateToProducts();
-  // Get the product price
-  const productData = productsPage.getAllProductsData();
-  productData.forEach((products) => {
-    const priceText = products.price?.trim();
-    // Price should have currency symbol or number
-    expect(priceText).toMatch(/[₹$\d.]/);
-  });
-});
+
 test("TC027: Availability units format", async ({ page }) => {});
 test("TC028: Multiple rows clickable", async ({ page }) => {});
 test("TC029: Product details completeness", async ({ page }) => {});
