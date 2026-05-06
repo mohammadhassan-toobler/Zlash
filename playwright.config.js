@@ -37,26 +37,26 @@ export default defineConfig({
       name: "setup",
       testMatch: /.*\.setup\.js/,
     },
-    {
-      name: "chromium",
-      use: {
-        ...devices["Desktop Chrome"],
-        baseURL: process.env.BASE_URL,
-        storageState: "storageState.json",
-        dependencies: ["setup"],
-      },
-    },
-    
 
     // {
-    //   name: "firefox",
+    //   name: "chromium",
     //   use: {
-    //     ...devices["Desktop Firefox"],
+    //     ...devices["Desktop Chrome"],
     //     baseURL: process.env.BASE_URL,
     //     storageState: "storageState.json",
     //     dependencies: ["setup"],
     //   },
     // },
+
+    {
+      name: "firefox",
+      use: {
+        ...devices["Desktop Firefox"],
+        baseURL: process.env.BASE_URL,
+        storageState: "storageState.json",
+        dependencies: ["setup"],
+      },
+    },
 
     // {
     //   name: "webkit",
