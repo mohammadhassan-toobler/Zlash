@@ -27,7 +27,7 @@ export default defineConfig({
     baseURL: process.env.BASE_URL,
     screenshot: "only-on-failure",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    trace: "only-on-failure",
     headless: false,
   },
 
@@ -37,6 +37,7 @@ export default defineConfig({
       name: "setup",
       testMatch: /.*\.setup\.js/,
     },
+
     // {
     //   name: "chromium",
     //   use: {
