@@ -1,8 +1,14 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../fixtures/baseTest";
 import { ProductsPage } from "../pages/ProductsPage";
+import * as allure from "allure-js-commons";
 let productsPage, filteredCount;
+test.beforeAll(() => {
+  allure.feature("Products Module");
+});
 test.describe("Dashboard Page", () => {
   test.beforeEach(async ({ page }) => {
+    allure.story("Dashboard");
+    allure.owner("Hassan");
     await test.step("Launch", async () => {
       await page.goto("/");
     });
@@ -34,6 +40,8 @@ test.describe("Dashboard Page", () => {
 test.describe("Products List Page", () => {
   test.beforeEach(async ({ page }) => {
     productsPage = new ProductsPage(page);
+    allure.story("Products List");
+    allure.owner("Hassan");
     await page.goto("/");
     await test.step("Navigate to the Product Menu", async () => {
       await productsPage.navigateToProducts();
@@ -166,6 +174,8 @@ test.describe("Products List Page", () => {
 test.describe("Products Detail Page", async () => {
   let initialRowCount;
   test.beforeEach(async ({ page }) => {
+    allure.story("Product Details");
+    allure.owner("Hassan");
     productsPage = new ProductsPage(page);
     await page.goto("/");
     await test.step("Navigate to the Product Menu", async () => {
@@ -187,7 +197,7 @@ test.describe("Products Detail Page", async () => {
       );
     });
   });
-  test("TC008: Verify product details are displayed", async ({ page }) => {
+  test("TC008: Verify product details are displayed", async () => {
     await test.step("Verify product details are displayed", async () => {
       const productName = await productsPage.getProductDetailsName();
       const productPrice = await productsPage.getProductDetailsPrice();
@@ -199,7 +209,7 @@ test.describe("Products Detail Page", async () => {
       expect(Availability).toBeDefined();
     });
   });
-  test("TC009: Verify back to product list navigation", async ({ page }) => {
+  test("TC009: Verify back to product list navigation", async () => {
     await test.step("Click the Back to Product List Button", async () => {
       await productsPage.navigateBackToProductsListButton();
     });
@@ -214,7 +224,7 @@ test.describe("Products Detail Page", async () => {
       await expect(productsPage.getEditProductButton()).toBeVisible();
     });
   });
-  test("TC015: Verify list consistency after navigation", async ({ page }) => {
+  test("TC015: Verify list consistency after navigation", async () => {
     let finalRowCount;
     await test.step("Click the Back to Product List Button", async () => {
       await productsPage.navigateBackToProductsListButton();
@@ -232,10 +242,23 @@ test.describe("Products Detail Page", async () => {
       expect(finalRowCount).toBe(initialRowCount);
     });
   });
+
+  // test("TC083: Verify add product form has all required fields", async ({ page }) => {
+  //   const nameInput = page.locator("input[name*='name'], input[placeholder*='name' i]").first();
+  //   const priceInput = page.locator("input[name*='price'], input[placeholder*='price' i]").first();
+  //   const submitButton = page.getByRole("button", { name: /save|publish|submit|add/i }).first();
+
+  //   // At least name and price fields should exist
+  //   expect(await nameInput.isVisible().catch(() => false)).toBe(true);
+  //   expect(await priceInput.isVisible().catch(() => false)).toBe(true);
+  //   expect(await submitButton.isVisible()).toBe(true);
+  // });
 });
 test.describe("Filters", async () => {
   let products, filteredCount;
   test.beforeEach(async ({ page }) => {
+    allure.story("Product Filters");
+    allure.owner("Hassan");
     productsPage = new ProductsPage(page);
     await test.step("Launch", async () => {
       await page.goto("/");

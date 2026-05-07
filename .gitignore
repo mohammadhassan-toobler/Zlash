@@ -8,3 +8,5 @@ node_modules/
 /playwright/.auth/
 /.env
 storageState.json
+allure-results/
+allure-report/
