@@ -3,12 +3,20 @@ import { test, expect } from '../fixtures/baseTest';
 import { DashboardPage } from '../pages/DashboardPage';
 import { DASHBOARD_SELECTORS } from '../config/DashboardSelectors';
 import path from 'path';
+import * as allure from "allure-js-commons";
+
+test.beforeAll(() => {
+  allure.feature("Products Module");
+});
+
 
 test.describe('Edit Store - Full Regression Suite', () => {
   let dashboardPage;
 
   // Runs before EVERY test in this file
   test.beforeEach(async ({ page }) => {
+    allure.story("EditDashboard");
+    allure.owner("Pratheesh");
     dashboardPage = new DashboardPage(page);
     await dashboardPage.navigate(); 
     // THE FLOW:

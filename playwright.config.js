@@ -28,7 +28,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "only-on-failure",
-    headless: false,
+    headless: true,
   },
 
   /* Configure projects for major browsers */
@@ -38,15 +38,15 @@ export default defineConfig({
       testMatch: /.*\.setup\.js/,
     },
 
-    // {
-    //   name: "chromium",
-    //   use: {
-    //     ...devices["Desktop Chrome"],
-    //     baseURL: process.env.BASE_URL,
-    //     storageState: "storageState.json",
-    //     dependencies: ["setup"],
-    //   },
-    // },
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: process.env.BASE_URL,
+        storageState: "storageState.json",
+        dependencies: ["setup"],
+      },
+    },
 
     {
       name: "firefox",
