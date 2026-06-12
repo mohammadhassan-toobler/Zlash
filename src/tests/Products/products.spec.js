@@ -1,5 +1,5 @@
-import { test, expect } from "../fixtures/baseTest";
-import { ProductsPage } from "../pages/ProductsPage";
+import { test, expect } from "../../fixtures/baseTest";
+import { ProductsPage } from "../../pages/Products/ProductsPage";
 import * as allure from "allure-js-commons";
 let productsPage, filteredCount;
 test.beforeAll(() => {
@@ -136,9 +136,7 @@ test.describe("Products List Page", () => {
     });
   });
 
-  test("TC014: Verify Add Products button visible and clickable", async ({
-    page,
-  }) => {
+  test("TC014: Verify Add Products button visible and clickable", async () => {
     await test.step("Verify the Add product button is visible", async () => {
       await expect(productsPage.getAddProductButton()).toBeVisible();
     });
@@ -242,17 +240,6 @@ test.describe("Products Detail Page", async () => {
       expect(finalRowCount).toBe(initialRowCount);
     });
   });
-
-  // test("TC083: Verify add product form has all required fields", async ({ page }) => {
-  //   const nameInput = page.locator("input[name*='name'], input[placeholder*='name' i]").first();
-  //   const priceInput = page.locator("input[name*='price'], input[placeholder*='price' i]").first();
-  //   const submitButton = page.getByRole("button", { name: /save|publish|submit|add/i }).first();
-
-  //   // At least name and price fields should exist
-  //   expect(await nameInput.isVisible().catch(() => false)).toBe(true);
-  //   expect(await priceInput.isVisible().catch(() => false)).toBe(true);
-  //   expect(await submitButton.isVisible()).toBe(true);
-  // });
 });
 test.describe("Filters", async () => {
   let products, filteredCount;
@@ -429,22 +416,22 @@ test.describe("Filters", async () => {
   });
 });
 
-test("TC018: Verify pagination/scrolling behavior", async ({ page }) => {});
+// test("TC018: Verify pagination/scrolling behavior", async ({ page }) => {});
 
-test("TC025: Product name truncation", async ({ page }) => {});
+// test("TC025: Product name truncation", async ({ page }) => {});
 
-test("TC027: Availability units format", async ({ page }) => {});
-test("TC028: Multiple rows clickable", async ({ page }) => {});
-test("TC029: Product details completeness", async ({ page }) => {});
-test("TC030: Table scroll behavior", async ({ page }) => {});
-test("TC031: Page refresh maintains list", async ({ page }) => {});
-test("TC032: Browser back button", async ({ page }) => {});
-test("TC033: Product images alt text", async ({ page }) => {});
-test("TC034: Add button cursor feedback", async ({ page }) => {});
-test("TC035: Table header alignment", async ({ page }) => {});
-test("TC036: No console errors", async ({ page }) => {});
-test("TC037: Responsive mobile layout", async ({ page }) => {});
-test("TC038: Data consistency multi-load", async ({ page }) => {});
-test("TC039: Search result accuracy", async ({ page }) => {});
-test("TC040: Product click middle rows", async ({ page }) => {});
-test("TC041: Rapid product navigation", async ({ page }) => {});
+// test("TC027: Availability units format", async ({ page }) => {});
+// test("TC028: Multiple rows clickable", async ({ page }) => {});
+// test("TC029: Product details completeness", async ({ page }) => {});
+// test("TC030: Table scroll behavior", async ({ page }) => {});
+// test("TC031: Page refresh maintains list", async ({ page }) => {});
+// test("TC032: Browser back button", async ({ page }) => {});
+// test("TC033: Product images alt text", async ({ page }) => {});
+// test("TC034: Add button cursor feedback", async ({ page }) => {});
+// test("TC035: Table header alignment", async ({ page }) => {});
+// test("TC036: No console errors", async ({ page }) => {});
+// test("TC037: Responsive mobile layout", async ({ page }) => {});
+// test("TC038: Data consistency multi-load", async ({ page }) => {});
+// test("TC039: Search result accuracy", async ({ page }) => {});
+// test("TC040: Product click middle rows", async ({ page }) => {});
+// test("TC041: Rapid product navigation", async ({ page }) => {});
