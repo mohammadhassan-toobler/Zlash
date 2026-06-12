@@ -109,7 +109,7 @@ class ProductsPage {
     return this.productDetailsHeader;
   }
   async navigateToAddProducts() {
-    await this.addProductButton().click();
+    await this.addProductButton.click();
   }
   async getProductDetailsName() {
     const productName = await this.productNameData.textContent();
