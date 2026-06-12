@@ -2,12 +2,19 @@
 import { test, expect } from '@playwright/test';
 import { DashboardPage } from '../pages/DashboardPage';
 import { DASHBOARD_SELECTORS } from '../config/DashboardSelectors';
+import * as allure from "allure-js-commons";
+
+test.beforeAll(() => {
+  allure.feature("Products Module");
+});
 
 test.describe('Dashboard - Full Regression Suite', () => {
   let dashboardPage;
 
   // Runs before EVERY test in this file
   test.beforeEach(async ({ page }) => {
+    allure.story("Dashboard");
+    allure.owner("Pratheesh");
     dashboardPage = new DashboardPage(page);
     await dashboardPage.navigate(); 
   });

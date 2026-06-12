@@ -43,9 +43,12 @@ export const DASHBOARD_SELECTORS = {
       locator: "input[name='storeName']",
       role: { role: 'textbox', name: /store name/i } 
     },
-    PHONE_INPUT: { locator: 'input[placeholder="Store Phone Number"]' }, // Better than nth(1)!
+    //PHONE_INPUT: { locator: 'input[placeholder="Store Phone Number"]' }, // Better than nth(1)!
     EMAIL_INPUT: { role: { role: 'textbox', name: /email/i } },
-    BIO_INPUT: { role: { role: 'textbox', name: /bio/i } },
+    // Inside STORE_FORM...
+    BIO_INPUT: { 
+      locator: 'textarea[name="description"]' 
+    },
     STATUS_DROPDOWN: { role: { role: 'combobox', name: /store status/i } },
     CATEGORY_INPUT: { locator: '.css-1hwfws3' }, // Typical React-Select input class, update if needed
     // ... other inputs ...
@@ -65,8 +68,30 @@ export const DASHBOARD_SELECTORS = {
     LOGO_UPLOAD_INPUT: { 
       locator: 'input[type="file"]' 
     }, 
-    // File inputs are usually hidden
-    UPDATE_BUTTON: { role: { role: 'button', name: /update/i } },
-    CANCEL_BUTTON: { role: { role: 'button', name: /cancel/i } }
+    // // File inputs are usually hidden
+    // UPDATE_BUTTON: { role: { role: 'button', name: /update/i } },
+    // CANCEL_BUTTON: { role: { role: 'button', name: /cancel/i } }
+    // Inside src/config/DashboardSelectors.js -> STORE_FORM object
+  
+    CANCEL_BUTTON: { 
+      locator: 'button:has-text("Cancel")' 
+    },
+    UPDATE_BUTTON: { 
+      locator: 'button[type="submit"]:has-text("Update")' 
+    },
+    STATUS_COMBOBOX: { 
+      locator: 'input[role="combobox"]' 
+    },
+    STATUS_BADGE: { 
+      locator: 'div:has(> label:has-text("Status Approval")) p' 
+    },
+    // --- Update the Phone Input and add a locator for its Label ---
+    PHONE_INPUT: { 
+      locator: 'input[name="storePhoneNumber"]' 
+    },
+    PHONE_LABEL: { 
+      // This finds the specific label that sits right next to the phone input
+      locator: 'div:has(input[name="storePhoneNumber"]) > label' 
+    },
   }
 };

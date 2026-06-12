@@ -30,6 +30,7 @@ export default defineConfig({
     trace: "only-on-failure",
     headless: false,
     actionTimeout: 15000,
+    headless: true,
   },
   timeout: 60000,
 
@@ -40,15 +41,15 @@ export default defineConfig({
       testMatch: /.*\.setup\.js/,
     },
 
-    // {
-    //   name: "chromium",
-    //   use: {
-    //     ...devices["Desktop Chrome"],
-    //     baseURL: process.env.BASE_URL,
-    //     storageState: "storageState.json",
-    //     dependencies: ["setup"],
-    //   },
-    // },
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: process.env.BASE_URL,
+        storageState: "storageState.json",
+        dependencies: ["setup"],
+      },
+    },
 
     {
       name: "firefox",

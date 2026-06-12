@@ -122,4 +122,13 @@ async navigate() {
     // Alias for clickUpdate if you use this name in your tests
     await this.clickUpdate();
   }
+  // Inside src/pages/DashboardPage.js
+  // async saveChanges() {
+  //   // Promise.all tells Playwright: "Click the button, and DO NOT move to the 
+  //   // next line of code until the /api/store network request finishes responding."
+  //   await Promise.all([
+  //     this.page.waitForResponse(res => res.url().includes('/api/store')),
+  //     this.clickUpdate() // Your existing click method
+  //   ]);
+  // }
 }
