@@ -1,10 +1,4 @@
 // src/tests/edit-store.spec.js
-
-import { test, expect } from "../fixtures/baseTest";
-import { DashboardPage } from "../pages/DashboardPage";
-import { DASHBOARD_SELECTORS } from "../config/DashboardSelectors";
-import path from "path";
-=======
 import { test, expect } from '../fixtures/baseTest';
 import { DashboardPage } from '../pages/DashboardPage';
 import { DASHBOARD_SELECTORS } from '../config/DashboardSelectors';
@@ -29,7 +23,7 @@ test.describe("Edit Store - Full Regression Suite", () => {
     await dashboardPage.clickGoToStore(); // Reach the details page
     await dashboardPage.clickEditStore();
   });
-
+});
   // ==========================================
   // MODULE 0: RENDER & NAVIGATION (SECTION 2)
   // ==========================================
@@ -178,7 +172,7 @@ test.describe("Edit Store - Full Regression Suite", () => {
         DASHBOARD_SELECTORS.STORE_FORM.NAME_INPUT,
       );
       await nameInput.clear();
-
+    });
   test.describe('Module 3: Negative Form Validations', () => {
 
     test('TC-E013: Verify system prevents saving when mandatory Store Name is blank', async ({ page }) => {
