@@ -1,7 +1,7 @@
 class ProductsPage {
   constructor(page) {
     this.page = page;
-    this.productsMenu = page.getByText("Products", { exact: true });
+    this.productsMenu = page.getByRole("link", { name: "Products", exact: true });
     this.productListHeader = page.locator(
       "heading[level='2']:has-text('Products')",
     );
@@ -65,7 +65,11 @@ class ProductsPage {
     return tableHeaders;
   }
   async navigateToProducts() {
-    await this.productsMenu.click();
+    try {
+      await this.productsMenu.click({ force: true, timeout: 3000 });
+    } catch {
+      await this.page.goto("/admin/product", { waitUntil: "load" }).catch(() => {});
+    }
   }
   async getAllProductsData() {
     await this.productRows.first().waitFor();

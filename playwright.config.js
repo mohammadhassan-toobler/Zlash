@@ -30,7 +30,7 @@ export default defineConfig({
     trace: "only-on-failure",
     headless: false,
     actionTimeout: 15000,
-    headless: true,
+    //headless: true
   },
   timeout: 60000,
 
