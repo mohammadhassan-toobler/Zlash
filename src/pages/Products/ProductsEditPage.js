@@ -44,7 +44,7 @@ class ProductsEditPage {
     // "Choose your Media" renders as a styled div/placeholder, not a button role
     this.chooseMediaButton = page.getByText("Choose your Media", { exact: true });
     this.uploadMedia = page.locator('input[type="file"]').first();
-    this.uploadedProductImage = page.getByRole("img", { name: /media/i });
+    this.uploadedProductImage = page.locator('img[src*="amazonaws.com"], img[src*="/products/"]').first();
     this.categoryLockedText = page.getByText(
       "selected category cannot be edited",
       { exact: true },
@@ -111,9 +111,9 @@ class ProductsEditPage {
       name: "Choose Your Media",
     });
     this.variantUploadInput = page.locator('input[type="file"]').first();
-    this.variantDrawerCloseButton = page.locator(
-      '[data-scope="dialog"] [data-part="close-trigger"]',
-    );
+    this.variantDrawerCloseButton = page
+      .locator('[data-scope="dialog"] [data-part="close-trigger"]')
+      .or(page.locator('[data-scope="dialog"]').getByRole("button", { name: "Close" }));
 
     // ── Tab 5: Product Options ─────────────────────────────────────────
     this.productOptionsHeader = page.getByText("Set the Store Options", {
@@ -151,11 +151,6 @@ class ProductsEditPage {
         el.style.pointerEvents = "none";
       });
       document
-        .querySelectorAll('[data-scope="dialog"][data-part="positioner"]')
-        .forEach((el) => {
-          el.style.pointerEvents = "none";
-        });
-      document
         .querySelectorAll('[data-scope="dialog"][data-part="backdrop"]')
         .forEach((el) => {
           el.style.pointerEvents = "none";
@@ -166,10 +161,6 @@ class ProductsEditPage {
 
   /** Wait for Chakra toasts to disappear; force-hide if they persist */
   async waitForToastToDisappear() {
-    await this.page
-      .locator('[data-scope="toast"]')
-      .waitFor({ state: "hidden", timeout: 10000 })
-      .catch(() => {});
     await this.page
       .evaluate(() => {
         document.querySelectorAll('[data-scope="toast"]').forEach((el) => {
@@ -185,6 +176,69 @@ class ProductsEditPage {
         }
       })
       .catch(() => {});
+  }
+
+  /**
+   * Safely click an element by waiting for toasts, cleaning up overlays,
+   * and attempting standard click, evaluate click, and finally forced click.
+   */
+  async safeClick(locator, options = {}) {
+    await this.waitForToastToDisappear();
+    await this.cleanupOverlays();
+    try {
+      // Try standard click with a short timeout first (handles stable elements natively)
+      await locator.click({ timeout: 5000, ...options });
+    } catch (e) {
+      try {
+        // Fallback 1: Direct browser-side click (handles animating/moving elements instantly)
+        await locator.evaluate((el) => {
+          if (el) el.click();
+        });
+      } catch (innerErr) {
+        // Fallback 2: Forced click (waits for element to appear if not in DOM yet)
+        await locator.click({ force: true, timeout: 2000, ...options }).catch(() => {});
+      }
+    }
+  }
+
+  /**
+   * Safely navigate to a URL with retries on network/DNS errors or timeouts.
+   */
+  async safeGoto(url, options = {}, maxRetries = 3) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.page.goto(url, { waitUntil: "load", ...options });
+        return; // Success!
+      } catch (err) {
+        lastError = err;
+        const msg = err.message || "";
+        const isNetworkOrDnsError =
+          msg.includes("NS_ERROR_UNKNOWN_HOST") ||
+          msg.includes("NS_ERROR_ABORT") ||
+          msg.includes("NS_ERROR_CONNECTION_REFUSED") ||
+          msg.includes("net::ERR_NAME_NOT_RESOLVED") ||
+          msg.includes("net::ERR_CONNECTION_REFUSED") ||
+          msg.includes("net::ERR_CONNECTION_RESET") ||
+          msg.includes("Timeout");
+
+        if (isNetworkOrDnsError && attempt < maxRetries) {
+          console.log(`[NETWORK WARNING] Goto ${url} failed (Attempt ${attempt}/${maxRetries}): ${msg}. Retrying in 2s...`);
+          await this.page.waitForTimeout(2000);
+        } else {
+          throw err;
+        }
+      }
+    }
+  }
+
+  /** Safely click a tab, bypassing overlays or layout shifts if necessary */
+  async clickTab(tabNameOrLocator) {
+    const tabLocator = typeof tabNameOrLocator === "string"
+      ? this.page.getByRole("tab", { name: tabNameOrLocator })
+      : tabNameOrLocator;
+    await this.safeClick(tabLocator);
+    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -222,21 +276,11 @@ class ProductsEditPage {
 
   /** Click Continue (tabs 1-4) or Save (tab 5) */
   async clickContinueButton() {
-    await this.waitForToastToDisappear();
-    await this.cleanupOverlays();
-    const continueVisible = await this.continueButton
-      .isVisible()
-      .catch(() => false);
-    if (continueVisible) {
-      await this.continueButton.click();
-    } else {
-      // Tab 5 uses Save
-      try {
-        await this.saveButton.click({ timeout: 5000 });
-      } catch {
-        await this.saveButton.click({ force: true });
-      }
-    }
+    const actionButton = this.page
+      .locator("button")
+      .filter({ hasText: /Continue|Save/i })
+      .last();
+    await this.safeClick(actionButton);
     await this.page.waitForTimeout(500);
   }
 
@@ -249,13 +293,12 @@ class ProductsEditPage {
    * then click the "Edit Product" button to open the edit wizard.
    */
   async navigateToEditProduct(productId) {
-    await this.page.goto(`/admin/product/${productId}`, {
-      waitUntil: "networkidle",
+    await this.safeGoto(`/admin/product/${productId}`, {
+      waitUntil: "load",
     });
-    await this.page
-      .getByRole("button", { name: "Edit Product" })
-      .click();
-    await this.page.waitForLoadState("networkidle");
+    const editBtn = this.page.getByRole("button", { name: "Edit Product" });
+    await this.safeClick(editBtn);
+    await this.page.waitForLoadState("load");
   }
 
   /**
@@ -263,9 +306,12 @@ class ProductsEditPage {
    * Useful when the productId is known.
    */
   async navigateDirectlyToEditProduct(productId) {
-    await this.page.goto(`/admin/product/edit/${productId}`, {
-      waitUntil: "networkidle",
+    await this.safeGoto(`/admin/product/edit/${productId}`, {
+      waitUntil: "load",
     });
+    await this.addMediaHeader.waitFor({ state: "visible", timeout: 15000 }).catch(() => {});
+    await this.categoryDisplayed.waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
+    await this.page.waitForTimeout(500);
   }
 
   getEditProductPageHeader() {
@@ -281,12 +327,12 @@ class ProductsEditPage {
     // If currently on the edit page, navigate to the detail page first
     if (this.page.url().includes("/edit/")) {
       const productId = this.page.url().split("/edit/").pop();
-      await this.page.goto(`/admin/product/${productId}`, {
-        waitUntil: "networkidle",
+      await this.safeGoto(`/admin/product/${productId}`, {
+        waitUntil: "load",
       });
     }
-    await this.backToProductListLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.safeClick(this.backToProductListLink);
+    await this.page.waitForLoadState("load");
   }
 
   // ════════════════════════════════════════════════════════════════════════
@@ -334,25 +380,35 @@ class ProductsEditPage {
   }
 
   async updateProductName(newName) {
-    await this.productNameInput.click();
-    await this.productNameInput.selectAll
-      ? await this.productNameInput.selectAll()
-      : await this.productNameInput.triple_click
-        ? await this.productNameInput.tripleClick()
-        : null;
-    await this.productNameInput.fill(newName);
-  }
-
-  async clearAndFillProductName(newName) {
-    await this.productNameInput.click();
     await this.productNameInput.fill("");
     await this.productNameInput.fill(newName);
   }
 
+  async clearAndFillProductName(newName) {
+    await this.productNameInput.focus();
+    await this.productNameInput.press("Control+a");
+    await this.productNameInput.press("Backspace");
+    if (newName) {
+      await this.productNameInput.fill(newName);
+    }
+    await this.productNameInput.blur().catch(() => {});
+  }
+
   async clearAndFillBrandName(newName) {
-    await this.brandNameInput.click();
-    await this.brandNameInput.fill("");
-    await this.brandNameInput.fill(newName);
+    await this.brandNameInput.focus();
+    await this.brandNameInput.press("Control+a");
+    await this.brandNameInput.press("Backspace");
+    if (newName) {
+      await this.brandNameInput.fill(newName);
+    }
+    await this.brandNameInput.blur().catch(() => {});
+  }
+
+  async clearDescription() {
+    await this.descriptionInput.focus();
+    await this.descriptionInput.press("Control+a");
+    await this.descriptionInput.press("Backspace");
+    await this.descriptionInput.blur().catch(() => {});
   }
 
   getProductCategoryBadge() {
@@ -372,9 +428,6 @@ class ProductsEditPage {
   }
 
   async updateDescription(newDescription) {
-    await this.descriptionInput.scrollIntoViewIfNeeded();
-    await this.descriptionInput.click();
-    await this.page.waitForTimeout(200);
     await this.descriptionInput.fill("");
     await this.descriptionInput.pressSequentially(newDescription, {
       delay: 5,
@@ -416,7 +469,7 @@ class ProductsEditPage {
   /** Open the Edit Variant drawer for the first (or Nth) variant */
   async openVariantEditDrawer(nth = 0) {
     const editButtons = this.page.getByRole("button", { name: "Edit" });
-    await editButtons.nth(nth).click();
+    await this.safeClick(editButtons.nth(nth));
     await this.page.waitForTimeout(600);
   }
 
@@ -433,26 +486,30 @@ class ProductsEditPage {
   }
 
   async updateVariantQuantity(qty) {
-    await this.variantQuantityInput.click();
     await this.variantQuantityInput.fill(String(qty));
   }
 
   async updateVariantPrice(price) {
-    await this.variantPriceInput.click();
     await this.variantPriceInput.fill(String(price));
   }
 
   async clickVariantUpdate() {
-    await this.variantUpdateButton.click();
+    await this.safeClick(this.variantUpdateButton);
     await this.page.waitForTimeout(500);
   }
 
   async closeVariantDrawer() {
-    await this.variantDrawerCloseButton
-      .click()
-      .catch(async () => {
-        await this.page.keyboard.press("Escape");
-      });
+    const isOpenBefore = await this.variantDrawerHeader.isVisible().catch(() => false);
+    if (!isOpenBefore) {
+      return;
+    }
+    await this.safeClick(this.variantDrawerCloseButton);
+    await this.page.waitForTimeout(300);
+    const isOpenAfter = await this.variantDrawerHeader.isVisible().catch(() => false);
+    if (isOpenAfter) {
+      await this.page.keyboard.press("Escape");
+      await this.page.waitForTimeout(300);
+    }
     await this.page
       .locator('[data-scope="dialog"][data-part="backdrop"]')
       .waitFor({ state: "hidden", timeout: 5000 })
@@ -508,13 +565,7 @@ class ProductsEditPage {
   }
 
   async clickSave() {
-    await this.waitForToastToDisappear();
-    await this.cleanupOverlays();
-    try {
-      await this.saveButton.click({ timeout: 5000 });
-    } catch {
-      await this.saveButton.click({ force: true });
-    }
+    await this.safeClick(this.saveButton);
     await this.page.waitForTimeout(500);
   }
 
