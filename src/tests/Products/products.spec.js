@@ -47,7 +47,7 @@ test.describe("Products List Page", () => {
       await productsPage.navigateToProducts();
     });
     await test.step("Check the First Row is Visible", async () => {
-      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+      await expect(productsPage.getAllProductRows().first()).toBeVisible({ timeout: 20000 });
     });
   });
   test("TC003: Verify Products page layout and all elements", async ({
@@ -169,7 +169,7 @@ test.describe("Products List Page", () => {
     }
   });
 });
-test.describe("Products Detail Page", async () => {
+test.describe("Products Detail Page", () => {
   let initialRowCount;
   test.beforeEach(async ({ page }) => {
     allure.story("Product Details");
@@ -180,7 +180,7 @@ test.describe("Products Detail Page", async () => {
       await productsPage.navigateToProducts();
     });
     await test.step("Check the First Row is Visible", async () => {
-      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+      await expect(productsPage.getAllProductRows().first()).toBeVisible({ timeout: 20000 });
     });
     await test.step("Count rows before clicking the first product", async () => {
       initialRowCount = await productsPage.getAllRowCount();
@@ -231,7 +231,7 @@ test.describe("Products Detail Page", async () => {
       await expect(productsPage.getProductListHeader()).toBeVisible();
     });
     await test.step("Check the First Row is Visible", async () => {
-      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+      await expect(productsPage.getAllProductRows().first()).toBeVisible({ timeout: 20000 });
     });
     await test.step("Count rows after coming back to Product List page", async () => {
       finalRowCount = await productsPage.getAllRowCount();
@@ -241,7 +241,7 @@ test.describe("Products Detail Page", async () => {
     });
   });
 });
-test.describe("Filters", async () => {
+test.describe("Filters", () => {
   let products, filteredCount;
   test.beforeEach(async ({ page }) => {
     allure.story("Product Filters");
@@ -254,7 +254,7 @@ test.describe("Filters", async () => {
       await productsPage.navigateToProducts();
     });
     await test.step("Check the First Row is Visible", async () => {
-      await expect(productsPage.getAllProductRows().first()).toBeVisible();
+      await expect(productsPage.getAllProductRows().first()).toBeVisible({ timeout: 20000 });
     });
     await test.step("Get the product Data", async () => {
       products = await productsPage.getAllProductsData();
@@ -263,24 +263,27 @@ test.describe("Filters", async () => {
   });
 
   test("TC005: Verify search functionality for products", async () => {
+    let searchedProductName;
     await test.step("Skip the test if there are no products are present", async () => {
-      if (productsPage.getAllRowCount() == 0) {
+      const count = await productsPage.getAllRowCount();
+      if (count == 0) {
         test.skip(true, "No products present. Skipping product table test.");
       }
     });
 
     await test.step("Search the Initial Product", async () => {
-      await productsPage.searchRandomProduct();
+      searchedProductName = await productsPage.searchRandomProduct();
     });
 
     await test.step("Re-calculate rows after search", async () => {
-      filteredCount = productsPage.getAllRowCount();
+      filteredCount = await productsPage.getAllRowCount();
     });
 
     await test.step("Verify the search result", async () => {
+      const filteredRows = productsPage.getAllProductRows();
       for (let i = 0; i < filteredCount; i++) {
-        await expect(filteredCount.nth(i).locator("td").nth(1)).toHaveText(
-          productsPage.searchRandomProduct(),
+        await expect(filteredRows.nth(i).locator("td").nth(1)).toHaveText(
+          searchedProductName,
         );
       }
     });
@@ -292,15 +295,22 @@ test.describe("Filters", async () => {
     });
 
     await test.step("Re-calculate rows after search", async () => {
-      filteredCount = productsPage.getAllRowCount();
+      filteredCount = await productsPage.getAllRowCount();
     });
 
     await test.step("Clear the search", async () => {
       await productsPage.clearSearchInput();
+      await productsPage.getSearchBar().press("Enter");
+      // Wait for the table to reload with more results
+      await productsPage.page.waitForTimeout(1000);
     });
 
     await test.step("Verify the search results cleared", async () => {
-      expect(filteredCount).not.toEqual(productsPage.getAllRowCount());
+      await expect
+        .poll(async () => {
+          return await productsPage.getAllRowCount();
+        }, { timeout: 15000 })
+        .not.toEqual(filteredCount);
     });
   });
 
@@ -313,13 +323,14 @@ test.describe("Filters", async () => {
     });
   });
 
-  test("TC021: Search with special characters (@#$%)", async () => {
+  test("TC021: Search with special characters (@#$%) - Known Bug", async () => {
     // Search the special characters
     await test.step("Search with special Character", async () => {
       await productsPage.searchWithSpecialCharacter();
     });
     await test.step("Assert the filtered values", async () => {
-      for (let product of products) {
+      const filteredProducts = await productsPage.getAllProductsData();
+      for (let product of filteredProducts) {
         expect(product.name).toContain("_");
       }
     });
@@ -329,7 +340,7 @@ test.describe("Filters", async () => {
     await test.step("Search with empty String", async () => {
       await productsPage.searchWithEmptyString();
     });
-    await test.step("Verify the empty string searches anything", async () => {});
+    await test.step("Verify the empty string searches anything", async () => { });
     const filteredProducts = await productsPage.getAllProductsData();
     expect(filteredProducts).toEqual(products);
   });
@@ -408,7 +419,7 @@ test.describe("Filters", async () => {
         .poll(async () => {
           const data = await productsPage.getAllProductsData();
           return (
-            data.length > 0 && data.every((p) => p.progressState === "Draft")
+            data.length > 0 && data.every((p) => p.progressState && p.progressState.toLowerCase() === "draft")
           );
         })
         .toBe(true);

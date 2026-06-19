@@ -104,16 +104,20 @@ class ProductsEditPage {
     // Price has name="price" but no placeholder or label — use name selector
     this.variantPriceInput = page.locator('input[name="price"]');
     this.variantUpdateButton = page.getByRole("button", { name: "Update" });
-    this.variantDeleteButton = page
+    this.variantDrawerContainer = page
       .locator('[data-scope="dialog"]')
+      .filter({ hasText: "Edit Variant" })
+      .first();
+    this.variantDeleteButton = this.variantDrawerContainer
       .getByRole("button", { name: "Delete" });
     this.variantMediaButton = page.getByRole("button", {
       name: "Choose Your Media",
     });
     this.variantUploadInput = page.locator('input[type="file"]').first();
-    this.variantDrawerCloseButton = page
-      .locator('[data-scope="dialog"] [data-part="close-trigger"]')
-      .or(page.locator('[data-scope="dialog"]').getByRole("button", { name: "Close" }));
+    this.variantDrawerCloseButton = this.variantDrawerContainer
+      .locator('[data-part="close-trigger"]')
+      .or(this.variantDrawerContainer.getByRole("button", { name: "Close" }))
+      .first();
 
     // ── Tab 5: Product Options ─────────────────────────────────────────
     this.productOptionsHeader = page.getByText("Set the Store Options", {
@@ -147,16 +151,12 @@ class ProductsEditPage {
     await this.page.evaluate(() => {
       document.documentElement.style.pointerEvents = "";
       document.body.style.pointerEvents = "";
+      
+      // Category dropdown overlays
       document.querySelectorAll(".css-1yooxd2").forEach((el) => {
         el.style.pointerEvents = "none";
       });
-      document
-        .querySelectorAll('[data-scope="dialog"][data-part="backdrop"]')
-        .forEach((el) => {
-          el.style.pointerEvents = "none";
-          el.style.display = "none";
-        });
-    });
+    }).catch(() => {});
   }
 
   /** Wait for Chakra toasts to disappear; force-hide if they persist */
@@ -185,18 +185,17 @@ class ProductsEditPage {
   async safeClick(locator, options = {}) {
     await this.waitForToastToDisappear();
     await this.cleanupOverlays();
+    const timeout = options.timeout !== undefined ? options.timeout : 15000;
     try {
-      // Try standard click with a short timeout first (handles stable elements natively)
-      await locator.click({ timeout: 5000, ...options });
+      await locator.click({ ...options, timeout });
     } catch (e) {
       try {
-        // Fallback 1: Direct browser-side click (handles animating/moving elements instantly)
         await locator.evaluate((el) => {
           if (el) el.click();
+          else throw new Error("Element not found for evaluate click");
         });
       } catch (innerErr) {
-        // Fallback 2: Forced click (waits for element to appear if not in DOM yet)
-        await locator.click({ force: true, timeout: 2000, ...options }).catch(() => {});
+        await locator.click({ force: true, timeout: 5000, ...options });
       }
     }
   }
@@ -274,14 +273,30 @@ class ProductsEditPage {
     return clicked;
   }
 
-  /** Click Continue (tabs 1-4) or Save (tab 5) */
-  async clickContinueButton() {
-    const actionButton = this.page
+  async clickContinueButton(forceSingleClick = false) {
+    const activeTab = this.page.locator('[role="tabpanel"]:visible');
+    const initialId = await activeTab.getAttribute("id").catch(() => null);
+    const actionButton = activeTab
       .locator("button")
       .filter({ hasText: /Continue|Save/i })
-      .last();
-    await this.safeClick(actionButton);
-    await this.page.waitForTimeout(500);
+      .first();
+
+    if (forceSingleClick) {
+      await this.safeClick(actionButton);
+      return;
+    }
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await this.safeClick(actionButton);
+      await this.page.waitForTimeout(1000);
+      
+      const currentTab = this.page.locator('[role="tabpanel"]:visible');
+      const currentId = await currentTab.getAttribute("id").catch(() => null);
+      if (currentId !== initialId) {
+        return; // Successfully transitioned to the next tab!
+      }
+      console.log(`[Warning] clickContinueButton did not transition tab (Attempt ${attempt}/3). Retrying...`);
+    }
   }
 
   // ════════════════════════════════════════════════════════════════════════
@@ -385,29 +400,17 @@ class ProductsEditPage {
   }
 
   async clearAndFillProductName(newName) {
-    await this.productNameInput.focus();
-    await this.productNameInput.press("Control+a");
-    await this.productNameInput.press("Backspace");
-    if (newName) {
-      await this.productNameInput.fill(newName);
-    }
+    await this.productNameInput.fill(newName || "");
     await this.productNameInput.blur().catch(() => {});
   }
 
   async clearAndFillBrandName(newName) {
-    await this.brandNameInput.focus();
-    await this.brandNameInput.press("Control+a");
-    await this.brandNameInput.press("Backspace");
-    if (newName) {
-      await this.brandNameInput.fill(newName);
-    }
+    await this.brandNameInput.fill(newName || "");
     await this.brandNameInput.blur().catch(() => {});
   }
 
   async clearDescription() {
-    await this.descriptionInput.focus();
-    await this.descriptionInput.press("Control+a");
-    await this.descriptionInput.press("Backspace");
+    await this.descriptionInput.fill("");
     await this.descriptionInput.blur().catch(() => {});
   }
 
@@ -428,10 +431,13 @@ class ProductsEditPage {
   }
 
   async updateDescription(newDescription) {
-    await this.descriptionInput.fill("");
-    await this.descriptionInput.pressSequentially(newDescription, {
-      delay: 5,
-    });
+    await this.descriptionInput.focus();
+    await this.descriptionInput.fill(newDescription);
+    const value = await this.descriptionInput.inputValue();
+    if (value !== newDescription) {
+      await this.descriptionInput.fill("");
+      await this.descriptionInput.fill(newDescription);
+    }
   }
 
   async updateSleeveType(value) {
@@ -487,10 +493,24 @@ class ProductsEditPage {
 
   async updateVariantQuantity(qty) {
     await this.variantQuantityInput.fill(String(qty));
+    const val = await this.variantQuantityInput.inputValue();
+    if (val !== String(qty)) {
+      await this.variantQuantityInput.click();
+      await this.variantQuantityInput.press('Control+a');
+      await this.variantQuantityInput.press('Backspace');
+      await this.variantQuantityInput.fill(String(qty));
+    }
   }
 
   async updateVariantPrice(price) {
     await this.variantPriceInput.fill(String(price));
+    const val = await this.variantPriceInput.inputValue();
+    if (val !== String(price)) {
+      await this.variantPriceInput.click();
+      await this.variantPriceInput.press('Control+a');
+      await this.variantPriceInput.press('Backspace');
+      await this.variantPriceInput.fill(String(price));
+    }
   }
 
   async clickVariantUpdate() {
@@ -524,7 +544,40 @@ class ProductsEditPage {
 
   async enableDiscountAndFill(amount) {
     await this.cleanupOverlays();
-    await this.clickSwitchNearText("Discount");
+    
+    const isChecked = await this.page.evaluate(() => {
+      const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+        .find(c => {
+          let parent = c.parentElement;
+          for (let i = 0; i < 8; i++) {
+            if (!parent) break;
+            if (parent.textContent.includes("Discount")) return true;
+            parent = parent.parentElement;
+          }
+          return false;
+        });
+      return cb ? cb.checked : false;
+    });
+
+    if (!isChecked) {
+      const clicked = await this.clickSwitchNearText("Discount");
+      if (!clicked) {
+        await this.page.evaluate(() => {
+          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+            .find(c => {
+              let parent = c.parentElement;
+              for (let i = 0; i < 8; i++) {
+                if (!parent) break;
+                if (parent.textContent.includes("Discount")) return true;
+                parent = parent.parentElement;
+              }
+              return false;
+            });
+          if (cb) cb.click();
+        });
+      }
+      await this.page.waitForTimeout(500);
+    }
     await this.discountInput.fill(String(amount));
   }
 
@@ -542,6 +595,10 @@ class ProductsEditPage {
 
   getDeleteProductButton() {
     return this.deleteProductButton;
+  }
+
+  async clickDeleteProductButton() {
+    await this.safeClick(this.deleteProductButton);
   }
 
   getDeleteProductLabel() {
