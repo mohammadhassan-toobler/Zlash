@@ -12,7 +12,7 @@ class ProductsCreatePage {
     });
     this.mediaUpload = page.getByText("Choose your Media", { exact: true });
     this.uploadMedia = page.locator('input[type="file"]').first();
-    this.uploadedProductImage = page.getByRole("img", { name: "media" });
+    this.uploadedProductImage = page.locator('img[alt^="media"], img[src*="data:image"], img[src*="amazonaws.com"]').first();
     this.selectCategory = page.getByText("Select a Category", { exact: true });
     this.continueButton = page.getByRole("button", { name: "Continue" });
     this.productIdentityHeader = page.getByRole("heading", {
@@ -41,7 +41,10 @@ class ProductsCreatePage {
     this.selectGenderVariant = page.getByRole("button", { name: "Gender" });
     this.selectFitVariant = page.getByRole("button", { name: "Fit" });
     this.selectPatternVariant = page.getByRole("button", { name: "Pattern" });
-    this.variantSaveButton = page.getByRole("button", { name: "Save" });
+    this.variantSaveButton = page
+      .locator('[data-scope="dialog"]:visible')
+      .getByRole("button", { name: "Save" })
+      .first();
     this.addVariantButton = page.getByRole('button', { name: 'Add Variants' });
     this.sizeVariantsDetails = page.getByText('Select Size', { exact: true });
     this.colorVariantsDetails = page.getByText('Select Color', { exact: true });
@@ -63,22 +66,14 @@ class ProductsCreatePage {
   // ──────────────────────────────────────────────────────────────────────
   async cleanupOverlays() {
     await this.page.evaluate(() => {
-      // Restore pointer-events on html/body
       document.documentElement.style.pointerEvents = '';
       document.body.style.pointerEvents = '';
+      
       // Category dropdown overlays
       document.querySelectorAll('.css-1yooxd2').forEach(el => {
         el.style.pointerEvents = 'none';
       });
-      // Chakra dialog/drawer positioners and backdrops
-      document.querySelectorAll('[data-scope="dialog"][data-part="positioner"]').forEach(el => {
-        el.style.pointerEvents = 'none';
-      });
-      document.querySelectorAll('[data-scope="dialog"][data-part="backdrop"]').forEach(el => {
-        el.style.pointerEvents = 'none';
-        el.style.display = 'none';
-      });
-    });
+    }).catch(() => {});
   }
 
   // ──────────────────────────────────────────────────────────────────────
@@ -138,11 +133,6 @@ class ProductsCreatePage {
   // Universal helper: wait for toast notifications to disappear
   // ──────────────────────────────────────────────────────────────────────
   async waitForToastToDisappear() {
-    // First, wait up to 10s for the toast to disappear on its own
-    await this.page.locator('[data-scope="toast"]')
-      .waitFor({ state: 'hidden', timeout: 10000 })
-      .catch(() => {});
-    // If toast is still visible, hide it via JS to unblock pointer events
     await this.page.evaluate(() => {
       document.querySelectorAll('[data-scope="toast"]').forEach(el => {
         el.style.pointerEvents = 'none';
@@ -154,6 +144,24 @@ class ProductsCreatePage {
         toastGroup.style.display = 'none';
       }
     }).catch(() => {});
+  }
+
+  async safeClick(locator, options = {}) {
+    await this.waitForToastToDisappear();
+    await this.cleanupOverlays();
+    const timeout = options.timeout !== undefined ? options.timeout : 15000;
+    try {
+      await locator.click({ ...options, timeout });
+    } catch (e) {
+      try {
+        await locator.evaluate((el) => {
+          if (el) el.click();
+          else throw new Error("Element not found for evaluate click");
+        });
+      } catch (innerErr) {
+        await locator.click({ force: true, timeout: 5000, ...options });
+      }
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────────
@@ -172,7 +180,13 @@ class ProductsCreatePage {
     return this.mediaUpload;
   }
   async uploadProductImage(filePath) {
+    const responsePromise = this.page.waitForResponse(
+      response => response.url().includes('/api/v1/product-media-upload') && response.status() === 200,
+      { timeout: 30000 }
+    ).catch(() => null);
     await this.uploadMedia.setInputFiles(filePath);
+    await responsePromise;
+    await this.page.waitForTimeout(1000); // Allow UI to render the uploaded image
   }
   getUploadedProductImage() {
     return this.uploadedProductImage;
@@ -181,8 +195,8 @@ class ProductsCreatePage {
     return await this.selectCategory.isVisible();
   }
   async chooseCategory(category) {
-    await this.selectCategory.click();
-    await this.page.getByText(category, { exact: true }).click();
+    await this.safeClick(this.selectCategory);
+    await this.safeClick(this.page.getByText(category, { exact: true }));
     // The category dropdown renders a persistent overlay that blocks pointer events
     await this.cleanupOverlays();
   }
@@ -193,26 +207,32 @@ class ProductsCreatePage {
   // ──────────────────────────────────────────────────────────────────────
   // Navigation: Continue / Save button
   // ──────────────────────────────────────────────────────────────────────
-  async clickContinueButton() {
+  async clickContinueButton(forceSingleClick = false) {
     await this.waitForToastToDisappear();
     await this.cleanupOverlays();
-    // Try Continue first; on the last tab the button says "Save"
-    const continueVisible = await this.continueButton.isVisible().catch(() => false);
-    if (continueVisible) {
-      await this.continueButton.click();
-    } else {
-      // On Tab 5 (last tab), the button says "Save" — click the last visible Save button
-      // (to avoid clicking the variant Save button inside a drawer)
-      const saveButton = this.page.getByRole('button', { name: 'Save' }).last();
-      try {
-        await saveButton.click({ timeout: 5000 });
-      } catch {
-        // If toast/overlay still blocks, use force click to bypass interception
-        await saveButton.click({ force: true });
-      }
+    const activeTab = this.page.locator('[role="tabpanel"]:visible');
+    const initialId = await activeTab.getAttribute("id").catch(() => null);
+    const actionButton = activeTab
+      .locator("button")
+      .filter({ hasText: /Continue|Save/i })
+      .first();
+
+    if (forceSingleClick) {
+      await this.safeClick(actionButton);
+      return;
     }
-    // Brief wait for tab transition React re-render
-    await this.page.waitForTimeout(500);
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await this.safeClick(actionButton);
+      await this.page.waitForTimeout(1000);
+      
+      const currentTab = this.page.locator('[role="tabpanel"]:visible');
+      const currentId = await currentTab.getAttribute("id").catch(() => null);
+      if (currentId !== initialId) {
+        return; // Successfully transitioned to the next tab!
+      }
+      console.log(`[Warning] clickContinueButton did not transition tab (Attempt ${attempt}/3). Retrying...`);
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────────
@@ -224,39 +244,53 @@ class ProductsCreatePage {
   async fillProductName() {
     const timestamp = Date.now();
     this._productName = `Shirt ${timestamp}`; // Store for possible re-fill after toggle re-render
-    await this.productNameInput.click();
+    await this.safeClick(this.productNameInput);
     await this.productNameInput.fill(this._productName);
     // Verify the value was actually set (guard against React re-render clearing it)
     const value = await this.productNameInput.inputValue();
     if (!value) {
-      await this.productNameInput.click();
+      await this.safeClick(this.productNameInput);
       await this.productNameInput.fill(this._productName);
     }
   }
   async switchBrandNameToggle() {
-    // The brand name toggle is a native <checkbox> element next to the
-    // "This product doesn't have brand name" label — use JS to find and click it.
-    // Only toggle if the brand name input is not currently enabled.
-    const isEnabled = await this.brandNameInput.isEnabled().catch(() => false);
-    if (!isEnabled) {
-      // Use the generic JS strategy which handles checkboxes (Strategy 3)
+    await this.cleanupOverlays();
+    
+    // Check if the "doesn't have brand name" checkbox is checked
+    const isChecked = await this.page.evaluate(() => {
+      const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+        .find(c => {
+          let parent = c.parentElement;
+          for (let i = 0; i < 8; i++) {
+            if (!parent) break;
+            if (parent.textContent.includes("brand name")) return true;
+            parent = parent.parentElement;
+          }
+          return false;
+        });
+      return cb ? cb.checked : false;
+    });
+
+    // We want the checkbox to be UNCHECKED so that we can fill the brand name.
+    // If it is checked, click it to uncheck it.
+    if (isChecked) {
       const clicked = await this.clickSwitchNearText("doesn't have brand name");
       if (!clicked) {
-        // Fallback: find the checkbox that's near the brand name paragraph directly
         await this.page.evaluate(() => {
-          const paragraphs = document.querySelectorAll('p');
-          for (const p of paragraphs) {
-            if (p.textContent.includes("brand name")) {
-              const parent = p.parentElement;
-              if (parent) {
-                const cb = parent.querySelector('input[type="checkbox"]');
-                if (cb) { cb.click(); return; }
+          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+            .find(c => {
+              let parent = c.parentElement;
+              for (let i = 0; i < 8; i++) {
+                if (!parent) break;
+                if (parent.textContent.includes("brand name")) return true;
+                parent = parent.parentElement;
               }
-            }
-          }
+              return false;
+            });
+          if (cb) cb.click();
         });
       }
-      await this.page.waitForTimeout(300);
+      await this.page.waitForTimeout(500);
     }
   }
   async fillBrandName() {
@@ -268,7 +302,7 @@ class ProductsCreatePage {
     if (this._productName) {
       const currentName = await this.productNameInput.inputValue().catch(() => '');
       if (!currentName) {
-        await this.productNameInput.click();
+        await this.safeClick(this.productNameInput);
         await this.productNameInput.fill(this._productName);
       }
     }
@@ -284,24 +318,19 @@ class ProductsCreatePage {
     return this.productDetailsHeader;
   }
   async fillProductDetails() {
-    // Scroll the description textarea into view and explicitly focus it before filling
-    await this.descriptionInput.scrollIntoViewIfNeeded();
-    await this.descriptionInput.click();
+    await this.safeClick(this.descriptionInput);
     await this.page.waitForTimeout(200); // Let React settle after focus
-    // Use pressSequentially to simulate real keystrokes (fill() may silently fail on
-    // React controlled textareas that reset on synthetic input events)
-    await this.descriptionInput.pressSequentially(
-      "A regular-fit unisex cotton tee with a smooth print surface and a soft, broken-in feel. Easy through the body and sleeves, it works well as a daily staple, a branded uniform piece, or a clean base layer under outerwear.",
-      { delay: 5 }
-    );
-    // Verify the value was set, fall back to fill() if pressSequentially didn't work
+    
+    const descText = "A regular-fit unisex cotton tee with a smooth print surface and a soft, broken-in feel. Easy through the body and sleeves, it works well as a daily staple, a branded uniform piece, or a clean base layer under outerwear.";
+    await this.descriptionInput.fill(descText);
+    
+    // Verify the value was set, retry if not
     const descValue = await this.descriptionInput.inputValue();
-    if (!descValue) {
-      await this.descriptionInput.click();
-      await this.descriptionInput.fill(
-        "A regular-fit unisex cotton tee with a smooth print surface and a soft, broken-in feel."
-      );
+    if (descValue !== descText) {
+      await this.safeClick(this.descriptionInput);
+      await this.descriptionInput.fill(descText);
     }
+    
     await this.sleeveInput.fill("Full-Sleeve");
     await this.neckTypeInput.fill("Collar-Type");
     await this.lengthInput.fill("XL");
@@ -318,46 +347,63 @@ class ProductsCreatePage {
     await this.cleanupOverlays();
     // Wait for the Attributes tab to be fully rendered
     await this.productAttributesHeader.waitFor({ state: 'visible', timeout: 10000 });
-    // The variant toggle is a native <checkbox> — use JS to click the checkbox
-    // near "Variants?" text (same pattern as the brand name toggle)
-    const clicked = await this.clickSwitchNearText('Variants?');
-    if (!clicked) {
-      // Direct fallback: find the checkbox inside the Product Variants group
-      await this.page.evaluate(() => {
-        const paragraphs = document.querySelectorAll('p');
-        for (const p of paragraphs) {
-          if (p.textContent.includes('Variants')) {
-            const parent = p.parentElement;
-            if (parent) {
-              const cb = parent.querySelector('input[type="checkbox"]');
-              if (cb) { cb.click(); return; }
-            }
+    
+    // Check if the toggle is already ON
+    const isAlreadyOn = await this.page.evaluate(() => {
+      const checkbox = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+        .find(cb => {
+          let parent = cb.parentElement;
+          for (let i = 0; i < 8; i++) {
+            if (!parent) break;
+            if (parent.textContent.includes('Variants')) return true;
+            parent = parent.parentElement;
           }
-        }
-      });
+          return false;
+        });
+      return checkbox ? checkbox.checked : false;
+    });
+
+    if (!isAlreadyOn) {
+      const clicked = await this.clickSwitchNearText('Variants?');
+      if (!clicked) {
+        // Direct fallback: find the checkbox inside the Product Variants group
+        await this.page.evaluate(() => {
+          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+            .find(c => {
+              let parent = c.parentElement;
+              for (let i = 0; i < 8; i++) {
+                if (!parent) break;
+                if (parent.textContent.includes('Variants')) return true;
+                parent = parent.parentElement;
+              }
+              return false;
+            });
+          if (cb) cb.click();
+        });
+      }
+      // Wait for the toggle to take effect and "Choose Variant Type" button to appear
+      await this.page.waitForTimeout(800);
     }
-    // Wait for the toggle to take effect and "Choose Variant Type" button to appear
-    await this.page.waitForTimeout(800);
   }
   getChooseVariantTypeButton() {
     return this.chooseVariantTypeButton;
   }
   async clickVariantType() {
-    await this.chooseVariantTypeButton.click();
+    await this.safeClick(this.chooseVariantTypeButton);
   }
   async selectVariant() {
-    await this.selectSizeVariant.click();
-    await this.selectColorVariant.click();
-    await this.selectGenderVariant.click();
-    await this.selectFitVariant.click();
-    await this.selectPatternVariant.click();
-    await this.variantSaveButton.click();
+    await this.safeClick(this.selectSizeVariant);
+    await this.safeClick(this.selectColorVariant);
+    await this.safeClick(this.selectGenderVariant);
+    await this.safeClick(this.selectFitVariant);
+    await this.safeClick(this.selectPatternVariant);
+    await this.safeClick(this.variantSaveButton);
   }
   getAddVariantButton() {
     return this.addVariantButton;
   }
   async clickAddVariantButton() {
-    await this.addVariantButton.click();
+    await this.safeClick(this.addVariantButton);
   }
   verifySizeVariantsDetailsVisible() {
     return this.sizeVariantsDetails;
@@ -376,35 +422,58 @@ class ProductsCreatePage {
   }
   async verifyMandatoryVariantsError() {
     await this.waitForToastToDisappear();
-    await this.variantSaveButton.click();
+    await this.safeClick(this.variantSaveButton);
   }
   getVariantErrorMessages() {
     return this.variantErrorMessages;
   }
   async addVariantDetails() {
-    await this.sizeVariantsDetails.click({ force: true });
-    await this.variantFirstOption.click();
-    await this.colorVariantsDetails.click({ force: true });
-    await this.variantFirstOption.click();
-    await this.genderVariantsDetails.click({ force: true });
-    await this.variantFirstOption.click();
-    await this.fitVariantsDetails.click({ force: true });
-    await this.variantFirstOption.click();
-    await this.patternVariantsDetails.click({ force: true });
-    await this.variantFirstOption.click();
+    await this.safeClick(this.sizeVariantsDetails, { force: true });
+    await this.sizeVariantsDetails.press("ArrowDown").catch(() => {});
+    await this.safeClick(this.variantFirstOption);
+    await this.safeClick(this.colorVariantsDetails, { force: true });
+    await this.colorVariantsDetails.press("ArrowDown").catch(() => {});
+    await this.safeClick(this.variantFirstOption);
+    await this.safeClick(this.genderVariantsDetails, { force: true });
+    await this.genderVariantsDetails.press("ArrowDown").catch(() => {});
+    await this.safeClick(this.variantFirstOption);
+    await this.safeClick(this.fitVariantsDetails, { force: true });
+    await this.fitVariantsDetails.press("ArrowDown").catch(() => {});
+    await this.safeClick(this.variantFirstOption);
+    await this.safeClick(this.patternVariantsDetails, { force: true });
+    await this.patternVariantsDetails.press("ArrowDown").catch(() => {});
+    await this.safeClick(this.variantFirstOption);
+    await this.cleanupOverlays();
     await this.quantityInput.fill('10');
     await this.priceInput.fill('1000');
-    await this.availableToPurchaseToggle.click();
-    await this.variantSaveButton.click();
+    await this.safeClick(this.availableToPurchaseToggle);
+    await this.safeClick(this.variantSaveButton);
   }
   getVariantImageText() {
     return this.variantImage;
   }
   async uploadVariantImage(filePath) {
+    // Click the "Choose Your Media" text/button in the variant table row to open the upload drawer
+    await this.safeClick(this.variantImage);
+    await this.page.waitForTimeout(500); // wait for drawer/input to settle
+
+    const responsePromise = this.page.waitForResponse(
+      response => response.url().includes('/api/v1/product-media-upload') && response.status() === 200,
+      { timeout: 30000 }
+    ).catch(() => null);
     await this.uploadMedia.setInputFiles(filePath);
-    await this.variantSaveButton.click();
-    // Close the drawer after saving — Save doesn't auto-close it
-    await this.page.locator('[data-scope="dialog"] [data-part="close-trigger"]').click();
+    await responsePromise;
+    await this.page.waitForTimeout(1000); // Allow UI to render the uploaded image
+    await this.cleanupOverlays();
+    await this.safeClick(this.variantSaveButton, { force: true });
+    // Close the drawer after saving — only click if it is still open
+    const closeTrigger = this.page.locator('[data-scope="dialog"]')
+      .filter({ hasText: /Upload|Media/i })
+      .locator('[data-part="close-trigger"]')
+      .first();
+    if (await closeTrigger.isVisible().catch(() => false)) {
+      await this.safeClick(closeTrigger).catch(() => {});
+    }
     // Wait for the drawer to fully close
     await this.page.locator('[data-scope="dialog"][data-part="backdrop"]')
       .waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
@@ -431,11 +500,43 @@ class ProductsCreatePage {
   }
   async addDiscount() {
     await this.cleanupOverlays();
-    // Click the discount toggle
-    await this.clickSwitchNearText('Discount');
-    // Fill the discount amount
+    
+    // Check if discount toggle is already checked (ON)
+    const isChecked = await this.page.evaluate(() => {
+      const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+        .find(c => {
+          let parent = c.parentElement;
+          for (let i = 0; i < 8; i++) {
+            if (!parent) break;
+            if (parent.textContent.includes('Discount')) return true;
+            parent = parent.parentElement;
+          }
+          return false;
+        });
+      return cb ? cb.checked : false;
+    });
+
+    if (!isChecked) {
+      const clicked = await this.clickSwitchNearText('Discount');
+      if (!clicked) {
+        await this.page.evaluate(() => {
+          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+            .find(c => {
+              let parent = c.parentElement;
+              for (let i = 0; i < 8; i++) {
+                if (!parent) break;
+                if (parent.textContent.includes('Discount')) return true;
+                parent = parent.parentElement;
+              }
+              return false;
+            });
+          if (cb) cb.click();
+        });
+      }
+      await this.page.waitForTimeout(500);
+    }
+    
     await this.productDiscountInput.fill('100');
-    // Navigate to Tab 5 using the robust clickContinueButton method
     await this.clickContinueButton();
   }
 

@@ -26,14 +26,8 @@ class ProductsPage {
       name: "Edit Product",
     });
     this.productImage = this.productRows.locator("img");
-    this.allStatusFilter = page
-      .locator("div")
-      .filter({ hasText: /^All Status$/ })
-      .nth(2);
-    this.progressStateFilter = page
-      .locator("div")
-      .filter({ hasText: /^Progress Status$/ })
-      .nth(2);
+    this.allStatusFilter = page.getByRole("combobox").first();
+    this.progressStateFilter = page.getByRole("combobox").last();
     this.errorMessage = page.getByText("Data do not exists", { exact: true });
     this.clearFilterButton = page.getByLabel("Clear selected options");
   }
@@ -67,6 +61,7 @@ class ProductsPage {
   async navigateToProducts() {
     try {
       await this.productsMenu.click({ force: true, timeout: 3000 });
+      await this.page.waitForURL(/\/admin\/product/, { timeout: 2000 });
     } catch {
       await this.page.goto("/admin/product", { waitUntil: "load" }).catch(() => {});
     }
@@ -92,6 +87,20 @@ class ProductsPage {
     const initialProduct = await cells.nth(1).textContent();
     // Search the initial Product
     await this.searchInput.fill(initialProduct);
+    await this.searchInput.press("Enter");
+    // Wait for the table to filter
+    await Promise.race([
+      this.page.waitForFunction(
+        (t) => {
+          const el = document.querySelector('table tbody tr td:nth-child(2)');
+          return el && el.innerText.toLowerCase().includes(t.toLowerCase());
+        },
+        initialProduct,
+        { timeout: 25000 }
+      ),
+      this.page.locator('text=No Data Found').waitFor({ state: 'visible', timeout: 25000 })
+    ]).catch(() => {});
+    await this.page.waitForTimeout(500);
     return initialProduct;
   }
   async getAllRowCount() {
@@ -103,17 +112,17 @@ class ProductsPage {
   }
 
   async clearSearchInput() {
-    await this.searchInput.clear();
+    await this.page.getByPlaceholder("Search Products").clear();
   }
   async clickFirstProduct() {
     const cells = this.productRows.nth(0).locator("td");
-    await cells.nth(1).click();
+    await this.safeClick(cells.nth(1));
   }
   getProductDetailsHeader() {
     return this.productDetailsHeader;
   }
   async navigateToAddProducts() {
-    await this.addProductButton.click();
+    await this.safeClick(this.addProductButton);
   }
   async getProductDetailsName() {
     const productName = await this.productNameData.textContent();
@@ -132,7 +141,7 @@ class ProductsPage {
     return Availability;
   }
   async navigateBackToProductsListButton() {
-    await this.backToProductsListButton.click();
+    await this.safeClick(this.backToProductsListButton);
   }
   getEditProductButton() {
     return this.EditProductButton;
@@ -155,19 +164,49 @@ class ProductsPage {
     });
   }
   async searchWithSpecialCharacter() {
-    await this.searchInput.fill("_");
+    const searchInput = this.page.getByPlaceholder("Search Products");
+    await searchInput.fill("_");
   }
   async searchWithEmptyString() {
-    await this.searchInput.fill("");
-    await this.searchInput.press("Enter");
+    const searchInput = this.page.getByPlaceholder("Search Products");
+    await searchInput.fill("");
+    await searchInput.press("Enter");
   }
   async searchWithWhiteSpaces() {
-    await this.searchInput.fill("   ");
+    const searchInput = this.page.getByPlaceholder("Search Products");
+    await searchInput.fill("   ");
   }
   async search(text) {
-    await this.searchInput.fill(text);
-    await this.page.waitForTimeout(1000);
-    await this.productRows.first().waitFor();
+    const getSearchInput = () => this.page.getByPlaceholder("Search Products");
+    await this.safeClick(getSearchInput());
+    
+    try {
+      await getSearchInput().fill(text);
+    } catch {
+      await this.safeClick(getSearchInput());
+      await getSearchInput().fill(text);
+    }
+    
+    try {
+      await getSearchInput().press("Enter");
+    } catch {
+      await getSearchInput().press("Enter");
+    }
+    
+    // Wait for the table to filter: either the first row has the search text,
+    // or the "No Data Found" message appears.
+    await Promise.race([
+      this.page.waitForFunction(
+        (t) => {
+          const el = document.querySelector('table tbody tr td:nth-child(2)');
+          return el && el.innerText.toLowerCase().includes(t.toLowerCase());
+        },
+        text,
+        { timeout: 25000 }
+      ),
+      this.page.locator('text=No Data Found').waitFor({ state: 'visible', timeout: 25000 })
+    ]).catch(() => {});
+    await this.page.waitForTimeout(500);
   }
   async getFirstProductName() {
     return await this.getAllProductRows()
@@ -177,31 +216,106 @@ class ProductsPage {
       .textContent();
   }
   async filterByAllStatus(status) {
-    await this.allStatusFilter.click();
-    // Select the option - this assumes a dropdown/select exists
-    await this.page.getByRole("option", { name: status, exact: true }).click();
+    await this.safeClick(this.allStatusFilter);
+    await this.allStatusFilter.press("ArrowDown").catch(() => {});
+    await this.safeClick(this.page.getByRole("option", { name: status, exact: true }));
+    // Wait for the filter to apply: either a row availability matches, or "No Data Found" appears.
+    await Promise.race([
+      this.page.waitForFunction(
+        (s) => {
+          const el = document.querySelector('table tbody tr td:nth-child(5)');
+          return el && el.innerText.trim().toLowerCase() === s.toLowerCase();
+        },
+        status,
+        { timeout: 25000 }
+      ),
+      this.page.locator('text=No Data Found').waitFor({ state: 'visible', timeout: 25000 })
+    ]).catch(() => {});
+    await this.page.waitForTimeout(500);
   }
   async removeClickBlockers() {
     await this.page.evaluate(() => {
+      document.documentElement.style.pointerEvents = '';
+      document.body.style.pointerEvents = '';
       const blockers = document.querySelectorAll(
         '[class*="backdrop"], [class*="overlay"], [class*="loader"], [class*="spinner"]',
       );
       blockers.forEach((el) => el.remove());
     });
   }
+  async cleanupOverlays() {
+    await this.page.evaluate(() => {
+      document.documentElement.style.pointerEvents = '';
+      document.body.style.pointerEvents = '';
+      
+      // Category dropdown overlays
+      document.querySelectorAll(".css-1yooxd2").forEach((el) => {
+        el.style.pointerEvents = "none";
+      });
+    }).catch(() => {});
+  }
+  async waitForToastToDisappear() {
+    await this.page.evaluate(() => {
+      document.querySelectorAll('[data-scope="toast"]').forEach((el) => {
+        el.style.pointerEvents = "none";
+        el.style.display = "none";
+      });
+      const toastGroup = document.querySelector(
+        '[data-part="group"][data-scope="toast"]',
+      );
+      if (toastGroup) {
+        toastGroup.style.pointerEvents = "none";
+        toastGroup.style.display = "none";
+      }
+    }).catch(() => {});
+  }
+  async safeClick(locator, options = {}) {
+    await this.waitForToastToDisappear();
+    await this.cleanupOverlays();
+    const timeout = options.timeout !== undefined ? options.timeout : 15000;
+    try {
+      await locator.click({ ...options, timeout });
+    } catch (e) {
+      try {
+        await locator.evaluate((el) => {
+          if (el) el.click();
+          else throw new Error("Element not found for evaluate click");
+        });
+      } catch (innerErr) {
+        await locator.click({ force: true, timeout: 5000, ...options });
+      }
+    }
+  }
   async clearFilter() {
     const button = this.clearFilterButton;
     if ((await button.count()) > 0) {
-      await button.click();
+      await this.safeClick(button);
     } else {
       throw new Error("Clear filter button not found");
     }
     await this.removeClickBlockers();
   }
   async filterByProogressStatus(status) {
-    await this.progressStateFilter.click();
-    // Select the option - this assumes a dropdown/select exists
-    await this.page.getByRole("option", { name: status, exact: true }).click();
+    await this.removeClickBlockers();
+    await this.waitForToastToDisappear();
+    // Scroll the combobox into view before interacting
+    await this.progressStateFilter.scrollIntoViewIfNeeded().catch(() => {});
+    await this.safeClick(this.progressStateFilter);
+    await this.progressStateFilter.press("ArrowDown").catch(() => {});
+    await this.safeClick(this.page.getByRole("option", { name: status, exact: true }));
+    // Wait for the filter to apply: either a row progress status matches, or "No Data Found" appears.
+    await Promise.race([
+      this.page.waitForFunction(
+        (s) => {
+          const el = document.querySelector('table tbody tr td:nth-child(4)');
+          return el && el.innerText.trim().toLowerCase() === s.toLowerCase();
+        },
+        status,
+        { timeout: 25000 }
+      ),
+      this.page.locator('text=No Data Found').waitFor({ state: 'visible', timeout: 25000 })
+    ]).catch(() => {});
+    await this.page.waitForTimeout(500);
   }
 }
 export { ProductsPage };

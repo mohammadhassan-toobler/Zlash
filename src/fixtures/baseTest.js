@@ -10,9 +10,14 @@ export const test = base.extend({
     page.on('console', (msg) => {
       // We specifically look for 'error' type logs
       if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
+        const text = msg.text();
+        // Ignore external downloadable font failures (e.g. Google Fonts)
+        if (text.includes('downloadable font:') || text.includes('fonts.gstatic.com')) {
+          return;
+        }
+        consoleErrors.push(text);
         // Optional: Log to your terminal for real-time debugging
-        console.log(`\x1b[31m[BROWSER ERROR]\x1b[0m: ${msg.text()}`);
+        console.log(`\x1b[31m[BROWSER ERROR]\x1b[0m: ${text}`);
       }
     });
 
