@@ -9,7 +9,6 @@ test.beforeAll(() => {
   allure.feature("Products Module");
 });
 
-
 test.describe("Edit Store - Full Regression Suite", () => {
   let dashboardPage;
 
@@ -23,7 +22,7 @@ test.describe("Edit Store - Full Regression Suite", () => {
     await dashboardPage.clickGoToStore(); // Reach the details page
     await dashboardPage.clickEditStore();
   });
-});
+
   // ==========================================
   // MODULE 0: RENDER & NAVIGATION (SECTION 2)
   // ==========================================
@@ -83,9 +82,7 @@ test.describe("Edit Store - Full Regression Suite", () => {
   // MODULE 1: POSITIVE TEXT FIELD UPDATES
   // ==========================================
   test.describe("Module 1: Standard Text Fields", () => {
-    test("TC-E006 @smoke: Verify user can successfully update text fields", async ({
-      page,
-    }) => {
+    test("TC-E006 @smoke: Verify user can successfully update text fields", async ({ page }) => {
       await test.step("Fill form with valid updated data", async () => {
         const timestamp = Date.now();
         const testName = `Zlash QA Store ${timestamp}`;
@@ -93,12 +90,7 @@ test.describe("Edit Store - Full Regression Suite", () => {
         const testEmail = `qa-auto-${timestamp}@zlash.test`;
         const testBio = `Automated regression update at ${new Date().toISOString()}`;
 
-        await dashboardPage.updateStoreDetails(
-          testName,
-          testPhone,
-          testEmail,
-          testBio,
-        );
+        await dashboardPage.updateStoreDetails(testName, testPhone, testEmail, testBio);
         await dashboardPage.saveChanges();
       });
 
@@ -108,10 +100,7 @@ test.describe("Edit Store - Full Regression Suite", () => {
         // Navigate back to the landing page to see the Store Status block
         await dashboardPage.navigate();
 
-        const storeNameDisplay =
-          dashboardPage.locatorManager.getResilientLocator(
-            DASHBOARD_SELECTORS.STORE_NAME_DISPLAY,
-          );
+        const storeNameDisplay = dashboardPage.locatorManager.getResilientLocator(DASHBOARD_SELECTORS.STORE_NAME_DISPLAY);
         await expect(storeNameDisplay).toHaveText(/Zlash QA Store/);
       });
     });
@@ -137,16 +126,13 @@ test.describe("Edit Store - Full Regression Suite", () => {
         await expect(page).toHaveURL(/.*admin\/dashboard/);
       });
     });
-
   });
 
   // ==========================================
   // MODULE 2: MEDIA UPLOADS
   // ==========================================
   test.describe("Module 2: Media Uploads", () => {
-    test("TC-E010 @regression: Verify user can successfully upload a Store Logo", async ({
-      page,
-    }) => {
+    test("TC-E010 @regression: Verify user can successfully upload a Store Logo", async ({ page }) => {
       await test.step("Upload valid image file", async () => {
         const filePath = path.join(__dirname, "../test-data/test_logo.png");
         await dashboardPage.uploadStoreLogo(filePath);
@@ -162,17 +148,6 @@ test.describe("Edit Store - Full Regression Suite", () => {
   // ==========================================
   // MODULE 3: NEGATIVE VALIDATIONS (FORM RULES)
   // ==========================================
-
-  // test.describe("Module 3: Negative Form Validations", () => {
-  //   test("TC-E013: Verify system prevents saving when mandatory Store Name is blank", async ({
-  //     page,
-  //   }) => {
-  //     // 1. Clear the mandatory field
-  //     const nameInput = dashboardPage.locatorManager.getResilientLocator(
-  //       DASHBOARD_SELECTORS.STORE_FORM.NAME_INPUT,
-  //     );
-  //     await nameInput.clear();
-  //   });
   test.describe('Module 3: Negative Form Validations', () => {
 
     test('TC-E013: Verify system prevents saving when mandatory Store Name is blank', async ({ page }) => {
@@ -182,61 +157,16 @@ test.describe("Edit Store - Full Regression Suite", () => {
         await nameInput.clear();
       });
 
-
       await test.step('Attempt to save changes', async () => {
         await dashboardPage.saveChanges();
       });
 
-
-      // 3. Verify we did NOT route back to the dashboard (we are still on the form)
-      // Replace the toHaveURL check with:
-      const updateBtn = dashboardPage.locatorManager.getResilientLocator(
-        DASHBOARD_SELECTORS.STORE_FORM.UPDATE_BUTTON,
-      );
+      // Verify we did NOT route back to the dashboard (we are still on the form)
+      const updateBtn = dashboardPage.locatorManager.getResilientLocator(DASHBOARD_SELECTORS.STORE_FORM.UPDATE_BUTTON);
       await expect(updateBtn).toBeVisible();
 
-      // 4. Verify the UI shows a validation error (adjust text based on Zlash's actual error message)
+      // Verify the UI shows a validation error
       await expect(page.getByText("Store name is required")).toBeVisible();
-    });
-
-    test.only("TC-E014: Verify Email field explicitly rejects invalid formats", async ({
-      page,
-    }) => {
-      const emailInput = dashboardPage.locatorManager.getResilientLocator(
-        DASHBOARD_SELECTORS.STORE_FORM.EMAIL_INPUT,
-      );
-      await emailInput.fill("nexusli@trend");
-      await dashboardPage.saveChanges();
-
-      // // VERIFICATION: Ensure we stayed on the form by checking for the Update button
-      // const updateBtn = dashboardPage.locatorManager.getResilientLocator(DASHBOARD_SELECTORS.STORE_FORM.UPDATE_BUTTON);
-      // await expect(updateBtn).toBeVisible();
-    });
-
-    test("TC-E017: Verify Phone Number field enforces maximum digit length", async ({
-      page,
-    }) => {
-      const phoneInput = dashboardPage.locatorManager.getResilientLocator(
-        DASHBOARD_SELECTORS.STORE_FORM.PHONE_INPUT,
-      );
-      await phoneInput.fill("12345678901234567890");
-
-      // Attempt to save the invalid length
-      await dashboardPage.clickUpdate();
-
-      // Verify save was blocked (Update button still visible)
-      const updateBtn = dashboardPage.locatorManager.getResilientLocator(
-        DASHBOARD_SELECTORS.STORE_FORM.UPDATE_BUTTON,
-      );
-      await expect(updateBtn).toBeVisible();
-      await test.step('Verify save is blocked and validation error appears', async () => {
-        // Verify we did NOT route back to the dashboard (we are still on the form)
-        const updateBtn = dashboardPage.locatorManager.getResilientLocator(DASHBOARD_SELECTORS.STORE_FORM.UPDATE_BUTTON);
-        await expect(updateBtn).toBeVisible();
-        
-        // Verify the UI shows a validation error
-        await expect(page.getByText('Store name is required')).toBeVisible();
-      });
     });
 
     test('TC-E014: Verify Email field explicitly rejects invalid formats', async ({ page }) => {
@@ -249,8 +179,6 @@ test.describe("Edit Store - Full Regression Suite", () => {
       await test.step('Attempt to save changes (EXPECTED TO FAIL DUE TO KNOWN BUG)', async () => {
         await dashboardPage.saveChanges();
       });
-    
-      // Note: Verification steps omitted here because this currently bypasses UI rules and crashes the server (Backend Bug Logged).
     });
 
     test('TC-E015: Verify Phone Number field rejects alphabetical characters', async ({ page }) => {
@@ -331,7 +259,6 @@ test.describe("Edit Store - Full Regression Suite", () => {
   // ==========================================
   // MODULE 4: STORE CATEGORIES (COMPLEX STATE)
   // ==========================================
-
   test.describe('Module 4: Store Categories', () => {
 
     test('TC-E008: Verify user can successfully add a new tag to the "Store Categories"', async ({ page }) => {
@@ -388,10 +315,6 @@ test.describe("Edit Store - Full Regression Suite", () => {
         expect(tagCount).toBe(1);
       });
     });
-
-
-  test.describe("Module 4: Store Categories Module", () => {
-    // We will drop the MultiSelectDropdown tests (TC-E008 & TC-E009) right here!
-
   });
-});
+
+}); // <-- ALL MODULES ARE NOW SAFELY WRAPPED IN THIS SUITE
