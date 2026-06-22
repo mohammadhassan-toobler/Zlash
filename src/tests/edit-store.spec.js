@@ -267,8 +267,63 @@ test.describe('Edit Store - Full Regression Suite', () => {
   // ==========================================
   // MODULE 4: STORE CATEGORIES (COMPLEX STATE)
   // ==========================================
-  test.describe('Module 4: Store Categories Module', () => {
-      // We will drop the MultiSelectDropdown tests (TC-E008 & TC-E009) right here!
+  test.describe('Module 4: Store Categories', () => {
+
+    test('TC-E008: Verify user can successfully add a new tag to the "Store Categories"', async ({ page }) => {
+      const categoryInput = dashboardPage.locatorManager.getResilientLocator(DASHBOARD_SELECTORS.STORE_FORM.CATEGORY_INPUT);
+
+      await test.step('Focus category input and type a new tag', async () => {
+        await categoryInput.click();
+        await categoryInput.fill('Electronics'); // Use a real prefix
+        await page.keyboard.press('Enter');
+      });
+
+      await test.step('Verify the new tag appears in the UI', async () => {
+        // Use getByText to match the auto-completed database value
+        await expect(page.getByText('Electronics & Gadgets').last()).toBeVisible();
+      });
+    });
+
+    // test('TC-E009: Verify user can successfully remove an existing tag', async ({ page }) => {
+    //   const categoryInput = dashboardPage.locatorManager.getResilientLocator(DASHBOARD_SELECTORS.STORE_FORM.CATEGORY_INPUT);
+
+    //   await test.step('Add a temporary tag to remove', async () => {
+    //     await categoryInput.click();
+    //     await categoryInput.fill('Footwear');
+    //     await page.keyboard.press('Enter');
+    //     await expect(page.getByText('Footwear & Accessories').last()).toBeVisible();
+    //   });
+
+    //   // await test.step('Use Backspace to delete the last tag', async () => {
+    //   //   await categoryInput.click();
+    //   //   await page.keyboard.press('Backspace'); 
+    //   //   await page.keyboard.press('Backspace'); 
+    //   // });
+
+    //   await test.step('Verify the tag is removed from the UI', async () => {
+    //     await expect(page.getByText('Footwear & Accessories').last()).toBeHidden();
+    //   });
+    // });
+
+    test('TC-E019: Verify "Store Categories" prevents adding duplicate tags', async ({ page }) => {
+      const categoryInput = dashboardPage.locatorManager.getResilientLocator(DASHBOARD_SELECTORS.STORE_FORM.CATEGORY_INPUT);
+
+      await test.step('Add the exact same tag twice', async () => {
+        await categoryInput.click();
+        await categoryInput.fill('Fashion');
+        await page.keyboard.press('Enter');
+        
+        await categoryInput.fill('Fashion');
+        await page.keyboard.press('Enter');
+      });
+
+      await test.step('Verify only ONE instance of the tag exists', async () => {
+        // Count how many pills render. If the UI blocked the duplicate, count is 1.
+        const tagCount = await page.getByText('Fashion & Apparel').count();
+        expect(tagCount).toBe(1);
+      });
+    });
+
   });
 
 });
