@@ -10,3 +10,4 @@ node_modules/
 storageState.json
 allure-results/
 allure-report/
+/mcp_config.json
