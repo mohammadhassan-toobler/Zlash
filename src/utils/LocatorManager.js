@@ -9,7 +9,7 @@ export class LocatorManager {
    * Chains fallback selectors using Playwright's native .or() method.
    * Eliminates the need for brittle try/catch blocks.
    */
-  getResilientLocator(selectorObj) {
+  getResilientLocator(selectorObj, options = {}) {
     let loc;
 
     if (selectorObj.dataTest) {
@@ -22,7 +22,8 @@ export class LocatorManager {
     }
 
     if (selectorObj.text) {
-      const textLoc = this.page.getByText(selectorObj.text, { exact: false });
+      const isExact = selectorObj.exact !== undefined ? selectorObj.exact : false;
+      const textLoc = this.page.getByText(selectorObj.text, { exact: isExact });
       loc = loc ? loc.or(textLoc) : textLoc;
     }
 
@@ -46,6 +47,6 @@ export class LocatorManager {
       throw new Error(`Invalid selector configuration provided: ${JSON.stringify(selectorObj)}`);
     }
 
-    return loc.first();
+    return options.all ? loc : loc.first();
   }
 }

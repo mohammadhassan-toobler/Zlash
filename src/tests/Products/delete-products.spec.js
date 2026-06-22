@@ -386,7 +386,7 @@ test.describe("Delete Product Regression Suite", () => {
 
     await test.step("Verify error message or redirect is handled", async () => {
       // Missing data handling should show an error page or redirect to products list
-      await expect(productsPage.getErrorMessage().or(productsPage.getProductListHeader())).toBeVisible();
+      await expect(productsPage.getErrorMessage().or(productsPage.getProductListHeader()).first()).toBeVisible();
     });
   });
 });
