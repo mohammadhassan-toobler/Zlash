@@ -163,16 +163,16 @@ test.describe("Edit Store - Full Regression Suite", () => {
   // MODULE 3: NEGATIVE VALIDATIONS (FORM RULES)
   // ==========================================
 
-  test.describe("Module 3: Negative Form Validations", () => {
-    test("TC-E013: Verify system prevents saving when mandatory Store Name is blank", async ({
-      page,
-    }) => {
-      // 1. Clear the mandatory field
-      const nameInput = dashboardPage.locatorManager.getResilientLocator(
-        DASHBOARD_SELECTORS.STORE_FORM.NAME_INPUT,
-      );
-      await nameInput.clear();
-    });
+  // test.describe("Module 3: Negative Form Validations", () => {
+  //   test("TC-E013: Verify system prevents saving when mandatory Store Name is blank", async ({
+  //     page,
+  //   }) => {
+  //     // 1. Clear the mandatory field
+  //     const nameInput = dashboardPage.locatorManager.getResilientLocator(
+  //       DASHBOARD_SELECTORS.STORE_FORM.NAME_INPUT,
+  //     );
+  //     await nameInput.clear();
+  //   });
   test.describe('Module 3: Negative Form Validations', () => {
 
     test('TC-E013: Verify system prevents saving when mandatory Store Name is blank', async ({ page }) => {
