@@ -1,140 +1,188 @@
+// src/pages/Products/ProductsCreatePage.js
+import { PRODUCTS_SELECTORS } from '../../config/ProductsSelectors';
+import { LocatorManager } from '../../utils/LocatorManager';
+
 class ProductsCreatePage {
   constructor(page) {
     this.page = page;
-    this.addMediaHeader = page.getByRole("heading", {
-      name: "Add Media of your Product",
-    });
-    this.addProductHeader = page.getByRole("heading", {
-      name: "Add a Product",
-    });
-    this.selectCategoryHeader = page.getByRole("heading", {
-      name: "Select a Category to get started!",
-    });
-    this.mediaUpload = page.getByText("Choose your Media", { exact: true });
+    this.locatorManager = new LocatorManager(page);
+
+    // Raw locators kept only where LocatorManager's .first() scoping would
+    // break file-input or strict-mode-sensitive operations.
     this.uploadMedia = page.locator('input[type="file"]').first();
-    this.uploadedProductImage = page.locator('img[alt^="media"], img[src*="data:image"], img[src*="amazonaws.com"]').first();
-    this.selectCategory = page.getByText("Select a Category", { exact: true });
-    this.continueButton = page.getByRole("button", { name: "Continue" });
-    this.productIdentityHeader = page.getByRole("heading", {
-      name: "Set the Identity of your Product",
-    });
-    this.productNameInput = page.getByRole("textbox", { name: "Product Name" });
-    this.brandNameInput = page.getByRole('textbox', { name: 'Brand Name' });
-    this.productCategoryText = page
-      .locator("span")
-      .filter({ hasText: "Fashion & Apparel" })
-      .first();
-    this.productDetailsHeader = page.getByText('Set the Details of your Product', { exact: true })
-    this.descriptionInput = page.getByRole("textbox", { name: "Description" });
-    this.sleeveInput = page.getByRole("textbox", { name: "Sleeve Type" });
-    this.neckTypeInput = page.getByRole("textbox", {
-      name: "Neck / Collar Type",
-    });
-    this.lengthInput = page.getByRole("textbox", { name: "Length" });
-    this.washCareInput = page.getByRole("textbox", { name: "Washcare" });
-    this.productAttributesHeader = page.getByText('Set the Attributes of your Product', { exact: true })
-    this.chooseVariantTypeButton = page.getByRole("button", {
-      name: "Choose Variant Type",
-    });
-    this.selectSizeVariant = page.getByRole("button", { name: "Size" });
-    this.selectColorVariant = page.getByRole("button", { name: "Color" });
-    this.selectGenderVariant = page.getByRole("button", { name: "Gender" });
-    this.selectFitVariant = page.getByRole("button", { name: "Fit" });
-    this.selectPatternVariant = page.getByRole("button", { name: "Pattern" });
-    this.variantSaveButton = page
-      .locator('[data-scope="dialog"]:visible')
-      .getByRole("button", { name: "Save" })
-      .first();
-    this.addVariantButton = page.getByRole('button', { name: 'Add Variants' });
-    this.sizeVariantsDetails = page.getByText('Select Size', { exact: true });
-    this.colorVariantsDetails = page.getByText('Select Color', { exact: true });
-    this.genderVariantsDetails = page.getByText('Select Gender', { exact: true });
-    this.fitVariantsDetails = page.getByText('Select Fit', { exact: true });
-    this.patternVariantsDetails = page.getByText('Select Pattern', { exact: true });
-    this.variantErrorMessages = page.locator('span').filter({ hasText: 'Required' });
-    this.variantFirstOption = page.getByRole('option').first();
-    this.quantityInput = page.getByRole('textbox', { name: 'Quantity' });
-    this.priceInput = page.getByRole('textbox', { name: 'Price' });
-    this.availableToPurchaseToggle = page.locator("span[id='switch:isAvailable:control']");
-    this.variantImage = page.locator(':text("Choose Your Media")');
-    this.productDiscountInput = page.getByPlaceholder('Enter the Amount');
-    this.productOptionsHeader = page.getByText('Set the Store Options', { exact: true });
   }
 
-  // ──────────────────────────────────────────────────────────────────────
-  // Universal helper: clean up ALL known overlay/pointer-events blockers
-  // ──────────────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
+  // Element Getters using LocatorManager
+  // ════════════════════════════════════════════════════════════════════════
+
+  getAddProductHeader() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.ADD_PRODUCT_PAGE_HEADER);
+  }
+
+  getAddMediaHeader() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.ADD_MEDIA_HEADER);
+  }
+
+  getSelectCategoryHeader() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.SELECT_CATEGORY_HEADER);
+  }
+
+  getMediaUpload() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.CHOOSE_MEDIA_BUTTON);
+  }
+
+  getUploadedProductImage() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.UPLOADED_PRODUCT_IMAGE);
+  }
+
+  getProductIdentityHeader() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_IDENTITY_HEADER);
+  }
+
+  getproductDetailsHeader() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_DETAILS_TAB_HEADER);
+  }
+
+  getproductsAttributeHeader() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_ATTRIBUTES_HEADER);
+  }
+
+  getChooseVariantTypeButton() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.CHOOSE_VARIANT_TYPE_BUTTON);
+  }
+
+  getAddVariantButton() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.ADD_VARIANT_BUTTON);
+  }
+
+  verifySizeVariantsDetailsVisible() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SIZE_SELECT);
+  }
+
+  verifyColorVariantsDetailsVisible() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_COLOR_SELECT);
+  }
+
+  verifyGenderVariantsDetailsVisible() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_GENDER_SELECT);
+  }
+
+  verifyFitVariantsDetailsVisible() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_FIT_SELECT);
+  }
+
+  verifyPatternVariantsDetailsVisible() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_PATTERN_SELECT);
+  }
+
+  getVariantErrorMessages() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_ERROR_MESSAGES, { all: true });
+  }
+
+  getVariantImageText() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_IMAGE_BUTTON);
+  }
+
+  getProductOptionsHeader() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_OPTIONS_HEADER);
+  }
+
+  verifyCategoryVisible(category) {
+    return this.page.getByText(category, { exact: true }).first();
+  }
+
+  verifyProductCategoryVisible() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_CATEGORY_BADGE);
+  }
+
+  get productNameInput() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_NAME_INPUT);
+  }
+
+  get brandNameInput() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.BRAND_NAME_INPUT);
+  }
+
+  get descriptionInput() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.DESCRIPTION_INPUT);
+  }
+
+  get sleeveInput() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.SLEEVE_INPUT);
+  }
+
+  get neckTypeInput() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.NECK_TYPE_INPUT);
+  }
+
+  get lengthInput() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.LENGTH_INPUT);
+  }
+
+  get washCareInput() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.WASHCARE_INPUT);
+  }
+
+  get selectSizeVariant() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SIZE_BUTTON);
+  }
+
+  get variantSaveButton() {
+    return this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SAVE_BUTTON);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Universal helpers
+  // ════════════════════════════════════════════════════════════════════════
+
+  /** Remove Chakra overlay / backdrop elements that block pointer events */
   async cleanupOverlays() {
     await this.page.evaluate(() => {
       document.documentElement.style.pointerEvents = '';
       document.body.style.pointerEvents = '';
-      
-      // Category dropdown overlays
-      document.querySelectorAll('.css-1yooxd2').forEach(el => {
+      document.querySelectorAll('.css-1yooxd2').forEach((el) => {
         el.style.pointerEvents = 'none';
       });
     }).catch(() => {});
   }
 
-  // ──────────────────────────────────────────────────────────────────────
-  // Universal helper: click a Chakra switch near specific text using JS
-  // This bypasses all locator resolution issues with nested wrapper divs
-  // ──────────────────────────────────────────────────────────────────────
+  /**
+   * Click a Chakra switch near a specific text string.
+   * Traverses up to 8 ancestor levels. Returns the strategy used or null.
+   */
   async clickSwitchNearText(textFragment) {
     await this.cleanupOverlays();
     const clicked = await this.page.evaluate((text) => {
-      // Strategy 1: Find switch labels near the text
-      const switches = document.querySelectorAll('label[data-scope="switch"]');
-      for (const sw of switches) {
-        let parent = sw.parentElement;
-        for (let i = 0; i < 8; i++) {
-          if (!parent) break;
-          if (parent.textContent.includes(text)) {
-            sw.click();
-            return 'label';
+      const strategies = [
+        { sel: 'label[data-scope="switch"]', key: 'label' },
+        { sel: 'span[data-part="control"]', key: 'control' },
+        { sel: 'input[type="checkbox"]', key: 'checkbox' },
+      ];
+      for (const { sel, key } of strategies) {
+        const els = document.querySelectorAll(sel);
+        for (const el of els) {
+          let parent = el.parentElement;
+          for (let i = 0; i < 8; i++) {
+            if (!parent) break;
+            if (parent.textContent.includes(text)) {
+              el.click();
+              return key;
+            }
+            parent = parent.parentElement;
           }
-          parent = parent.parentElement;
-        }
-      }
-      // Strategy 2: Find switch control spans near the text
-      const controls = document.querySelectorAll('span[data-part="control"]');
-      for (const ctrl of controls) {
-        let parent = ctrl.parentElement;
-        for (let i = 0; i < 8; i++) {
-          if (!parent) break;
-          if (parent.textContent.includes(text)) {
-            ctrl.click();
-            return 'control';
-          }
-          parent = parent.parentElement;
-        }
-      }
-      // Strategy 3: Find checkbox inputs near the text
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      for (const cb of checkboxes) {
-        let parent = cb.parentElement;
-        for (let i = 0; i < 8; i++) {
-          if (!parent) break;
-          if (parent.textContent.includes(text)) {
-            cb.click();
-            return 'checkbox';
-          }
-          parent = parent.parentElement;
         }
       }
       return null;
     }, textFragment);
-    // Wait for the toggle state to update
     await this.page.waitForTimeout(500);
     return clicked;
   }
 
-  // ──────────────────────────────────────────────────────────────────────
-  // Universal helper: wait for toast notifications to disappear
-  // ──────────────────────────────────────────────────────────────────────
+  /** Wait for Chakra toasts to disappear; force-hide if they persist */
   async waitForToastToDisappear() {
     await this.page.evaluate(() => {
-      document.querySelectorAll('[data-scope="toast"]').forEach(el => {
+      document.querySelectorAll('[data-scope="toast"]').forEach((el) => {
         el.style.pointerEvents = 'none';
         el.style.display = 'none';
       });
@@ -146,6 +194,9 @@ class ProductsCreatePage {
     }).catch(() => {});
   }
 
+  /**
+   * Safely click an element: standard click → evaluate click → forced click.
+   */
   async safeClick(locator, options = {}) {
     await this.waitForToastToDisappear();
     await this.cleanupOverlays();
@@ -156,7 +207,7 @@ class ProductsCreatePage {
       try {
         await locator.evaluate((el) => {
           if (el) el.click();
-          else throw new Error("Element not found for evaluate click");
+          else throw new Error('Element not found for evaluate click');
         });
       } catch (innerErr) {
         await locator.click({ force: true, timeout: 5000, ...options });
@@ -164,56 +215,44 @@ class ProductsCreatePage {
     }
   }
 
-  // ──────────────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
   // Tab 1: Product Category
-  // ──────────────────────────────────────────────────────────────────────
-  getAddProductHeader() {
-    return this.addProductHeader;
-  }
-  getAddMediaHeader() {
-    return this.addMediaHeader;
-  }
-  getSelectCategoryHeader() {
-    return this.selectCategoryHeader;
-  }
-  getMediaUpload() {
-    return this.mediaUpload;
-  }
+  // ════════════════════════════════════════════════════════════════════════
+
   async uploadProductImage(filePath) {
     const responsePromise = this.page.waitForResponse(
-      response => response.url().includes('/api/v1/product-media-upload') && response.status() === 200,
+      (response) =>
+        response.url().includes('/api/v1/product-media-upload') && response.status() === 200,
       { timeout: 30000 }
     ).catch(() => null);
     await this.uploadMedia.setInputFiles(filePath);
     await responsePromise;
-    await this.page.waitForTimeout(1000); // Allow UI to render the uploaded image
-  }
-  getUploadedProductImage() {
-    return this.uploadedProductImage;
-  }
-  async verifySelectCategoryButtonVisible() {
-    return await this.selectCategory.isVisible();
-  }
-  async chooseCategory(category) {
-    await this.safeClick(this.selectCategory);
-    await this.safeClick(this.page.getByText(category, { exact: true }));
-    // The category dropdown renders a persistent overlay that blocks pointer events
-    await this.cleanupOverlays();
-  }
-  verifyCategoryVisible(category) {
-    return this.page.getByText(category, { exact: true }).first();
+    await this.page.waitForTimeout(1000);
   }
 
-  // ──────────────────────────────────────────────────────────────────────
+  async verifySelectCategoryButtonVisible() {
+    return await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.SELECT_CATEGORY_BUTTON).isVisible();
+  }
+
+  async chooseCategory(category) {
+    await this.safeClick(
+      this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.SELECT_CATEGORY_BUTTON)
+    );
+    await this.safeClick(this.page.getByText(category, { exact: true }));
+    await this.cleanupOverlays();
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
   // Navigation: Continue / Save button
-  // ──────────────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
+
   async clickContinueButton(forceSingleClick = false) {
     await this.waitForToastToDisappear();
     await this.cleanupOverlays();
     const activeTab = this.page.locator('[role="tabpanel"]:visible');
-    const initialId = await activeTab.getAttribute("id").catch(() => null);
+    const initialId = await activeTab.getAttribute('id').catch(() => null);
     const actionButton = activeTab
-      .locator("button")
+      .locator('button')
       .filter({ hasText: /Continue|Save/i })
       .first();
 
@@ -225,133 +264,119 @@ class ProductsCreatePage {
     for (let attempt = 1; attempt <= 3; attempt++) {
       await this.safeClick(actionButton);
       await this.page.waitForTimeout(1000);
-      
       const currentTab = this.page.locator('[role="tabpanel"]:visible');
-      const currentId = await currentTab.getAttribute("id").catch(() => null);
+      const currentId = await currentTab.getAttribute('id').catch(() => null);
       if (currentId !== initialId) {
-        return; // Successfully transitioned to the next tab!
+        return;
       }
-      console.log(`[Warning] clickContinueButton did not transition tab (Attempt ${attempt}/3). Retrying...`);
+      console.log(
+        `[Warning] clickContinueButton did not transition tab (Attempt ${attempt}/3). Retrying...`
+      );
     }
   }
 
-  // ──────────────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
   // Tab 2: Product Identity
-  // ──────────────────────────────────────────────────────────────────────
-  getProductIdentityHeader() {
-    return this.productIdentityHeader;
-  }
+  // ════════════════════════════════════════════════════════════════════════
+
   async fillProductName() {
     const timestamp = Date.now();
-    this._productName = `Shirt ${timestamp}`; // Store for possible re-fill after toggle re-render
-    await this.safeClick(this.productNameInput);
-    await this.productNameInput.fill(this._productName);
-    // Verify the value was actually set (guard against React re-render clearing it)
-    const value = await this.productNameInput.inputValue();
+    this._productName = `Shirt ${timestamp}`;
+    const nameInput = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_NAME_INPUT);
+    await this.safeClick(nameInput);
+    await nameInput.fill(this._productName);
+    const value = await nameInput.inputValue();
     if (!value) {
-      await this.safeClick(this.productNameInput);
-      await this.productNameInput.fill(this._productName);
+      await this.safeClick(nameInput);
+      await nameInput.fill(this._productName);
     }
   }
+
   async switchBrandNameToggle() {
     await this.cleanupOverlays();
-    
-    // Check if the "doesn't have brand name" checkbox is checked
     const isChecked = await this.page.evaluate(() => {
-      const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-        .find(c => {
-          let parent = c.parentElement;
-          for (let i = 0; i < 8; i++) {
-            if (!parent) break;
-            if (parent.textContent.includes("brand name")) return true;
-            parent = parent.parentElement;
-          }
-          return false;
-        });
+      const cb = Array.from(document.querySelectorAll('input[type="checkbox"]')).find((c) => {
+        let parent = c.parentElement;
+        for (let i = 0; i < 8; i++) {
+          if (!parent) break;
+          if (parent.textContent.includes("brand name")) return true;
+          parent = parent.parentElement;
+        }
+        return false;
+      });
       return cb ? cb.checked : false;
     });
 
-    // We want the checkbox to be UNCHECKED so that we can fill the brand name.
-    // If it is checked, click it to uncheck it.
     if (isChecked) {
       const clicked = await this.clickSwitchNearText("doesn't have brand name");
       if (!clicked) {
         await this.page.evaluate(() => {
-          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-            .find(c => {
-              let parent = c.parentElement;
-              for (let i = 0; i < 8; i++) {
-                if (!parent) break;
-                if (parent.textContent.includes("brand name")) return true;
-                parent = parent.parentElement;
-              }
-              return false;
-            });
+          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]')).find((c) => {
+            let parent = c.parentElement;
+            for (let i = 0; i < 8; i++) {
+              if (!parent) break;
+              if (parent.textContent.includes("brand name")) return true;
+              parent = parent.parentElement;
+            }
+            return false;
+          });
           if (cb) cb.click();
         });
       }
       await this.page.waitForTimeout(500);
     }
   }
+
   async fillBrandName() {
-    // Verify the input is enabled before filling
-    await this.brandNameInput.waitFor({ state: 'visible', timeout: 5000 });
-    await this.brandNameInput.fill("Allen Solly");
-    // The brand name toggle may have caused a React re-render that cleared the product name.
-    // Re-fill it if it got cleared.
+    const brandInput = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.BRAND_NAME_INPUT);
+    await brandInput.waitFor({ state: 'visible', timeout: 5000 });
+    await brandInput.fill('Allen Solly');
+    // Re-fill product name if React cleared it after toggle
     if (this._productName) {
-      const currentName = await this.productNameInput.inputValue().catch(() => '');
+      const nameInput = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_NAME_INPUT);
+      const currentName = await nameInput.inputValue().catch(() => '');
       if (!currentName) {
-        await this.safeClick(this.productNameInput);
-        await this.productNameInput.fill(this._productName);
+        await this.safeClick(nameInput);
+        await nameInput.fill(this._productName);
       }
     }
   }
-  verifyProductCategoryVisible() {
-    return this.productCategoryText;
-  }
 
-  // ──────────────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
   // Tab 3: Product Details
-  // ──────────────────────────────────────────────────────────────────────
-  getproductDetailsHeader() {
-    return this.productDetailsHeader;
-  }
+  // ════════════════════════════════════════════════════════════════════════
+
   async fillProductDetails() {
-    await this.safeClick(this.descriptionInput);
-    await this.page.waitForTimeout(200); // Let React settle after focus
-    
-    const descText = "A regular-fit unisex cotton tee with a smooth print surface and a soft, broken-in feel. Easy through the body and sleeves, it works well as a daily staple, a branded uniform piece, or a clean base layer under outerwear.";
-    await this.descriptionInput.fill(descText);
-    
-    // Verify the value was set, retry if not
-    const descValue = await this.descriptionInput.inputValue();
+    const descInput = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.DESCRIPTION_INPUT);
+    await this.safeClick(descInput);
+    await this.page.waitForTimeout(200);
+    const descText =
+      'A regular-fit unisex cotton tee with a smooth print surface and a soft, broken-in feel. Easy through the body and sleeves, it works well as a daily staple, a branded uniform piece, or a clean base layer under outerwear.';
+    await descInput.fill(descText);
+    const descValue = await descInput.inputValue();
     if (descValue !== descText) {
-      await this.safeClick(this.descriptionInput);
-      await this.descriptionInput.fill(descText);
+      await this.safeClick(descInput);
+      await descInput.fill(descText);
     }
-    
-    await this.sleeveInput.fill("Full-Sleeve");
-    await this.neckTypeInput.fill("Collar-Type");
-    await this.lengthInput.fill("XL");
-    await this.washCareInput.fill("Wash Inside out");
+
+    await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.SLEEVE_INPUT).fill('Full-Sleeve');
+    await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.NECK_TYPE_INPUT).fill('Collar-Type');
+    await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.LENGTH_INPUT).fill('XL');
+    await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.WASHCARE_INPUT).fill('Wash Inside out');
   }
 
-  // ──────────────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
   // Tab 4: Product Attributes
-  // ──────────────────────────────────────────────────────────────────────
-  getproductsAttributeHeader() {
-    return this.productAttributesHeader;
-  }
+  // ════════════════════════════════════════════════════════════════════════
+
   async switchVariantToggle() {
     await this.cleanupOverlays();
-    // Wait for the Attributes tab to be fully rendered
-    await this.productAttributesHeader.waitFor({ state: 'visible', timeout: 10000 });
-    
-    // Check if the toggle is already ON
+    const attrHeader = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.PRODUCT_ATTRIBUTES_HEADER);
+    await attrHeader.waitFor({ state: 'visible', timeout: 10000 });
+
     const isAlreadyOn = await this.page.evaluate(() => {
-      const checkbox = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-        .find(cb => {
+      const checkbox = Array.from(document.querySelectorAll('input[type="checkbox"]')).find(
+        (cb) => {
           let parent = cb.parentElement;
           for (let i = 0; i < 8; i++) {
             if (!parent) break;
@@ -359,132 +384,129 @@ class ProductsCreatePage {
             parent = parent.parentElement;
           }
           return false;
-        });
+        }
+      );
       return checkbox ? checkbox.checked : false;
     });
 
     if (!isAlreadyOn) {
       const clicked = await this.clickSwitchNearText('Variants?');
       if (!clicked) {
-        // Direct fallback: find the checkbox inside the Product Variants group
         await this.page.evaluate(() => {
-          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-            .find(c => {
-              let parent = c.parentElement;
-              for (let i = 0; i < 8; i++) {
-                if (!parent) break;
-                if (parent.textContent.includes('Variants')) return true;
-                parent = parent.parentElement;
-              }
-              return false;
-            });
+          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]')).find((c) => {
+            let parent = c.parentElement;
+            for (let i = 0; i < 8; i++) {
+              if (!parent) break;
+              if (parent.textContent.includes('Variants')) return true;
+              parent = parent.parentElement;
+            }
+            return false;
+          });
           if (cb) cb.click();
         });
       }
-      // Wait for the toggle to take effect and "Choose Variant Type" button to appear
       await this.page.waitForTimeout(800);
     }
   }
-  getChooseVariantTypeButton() {
-    return this.chooseVariantTypeButton;
-  }
+
   async clickVariantType() {
-    await this.safeClick(this.chooseVariantTypeButton);
+    await this.safeClick(
+      this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.CHOOSE_VARIANT_TYPE_BUTTON)
+    );
   }
+
   async selectVariant() {
-    await this.safeClick(this.selectSizeVariant);
-    await this.safeClick(this.selectColorVariant);
-    await this.safeClick(this.selectGenderVariant);
-    await this.safeClick(this.selectFitVariant);
-    await this.safeClick(this.selectPatternVariant);
-    await this.safeClick(this.variantSaveButton);
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SIZE_BUTTON));
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_COLOR_BUTTON));
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_GENDER_BUTTON));
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_FIT_BUTTON));
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_PATTERN_BUTTON));
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SAVE_BUTTON));
   }
-  getAddVariantButton() {
-    return this.addVariantButton;
-  }
+
   async clickAddVariantButton() {
-    await this.safeClick(this.addVariantButton);
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.ADD_VARIANT_BUTTON));
   }
-  verifySizeVariantsDetailsVisible() {
-    return this.sizeVariantsDetails;
-  }
-  verifyColorVariantsDetailsVisible() {
-    return this.colorVariantsDetails;
-  }
-  verifyGenderVariantsDetailsVisible() {
-    return this.genderVariantsDetails;
-  }
-  verifyFitVariantsDetailsVisible() {
-    return this.fitVariantsDetails;
-  }
-  verifyPatternVariantsDetailsVisible() {
-    return this.patternVariantsDetails;
-  }
+
   async verifyMandatoryVariantsError() {
     await this.waitForToastToDisappear();
-    await this.safeClick(this.variantSaveButton);
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SAVE_BUTTON));
   }
-  getVariantErrorMessages() {
-    return this.variantErrorMessages;
-  }
-  async addVariantDetails() {
-    await this.safeClick(this.sizeVariantsDetails, { force: true });
-    await this.sizeVariantsDetails.press("ArrowDown").catch(() => {});
-    await this.safeClick(this.variantFirstOption);
-    await this.safeClick(this.colorVariantsDetails, { force: true });
-    await this.colorVariantsDetails.press("ArrowDown").catch(() => {});
-    await this.safeClick(this.variantFirstOption);
-    await this.safeClick(this.genderVariantsDetails, { force: true });
-    await this.genderVariantsDetails.press("ArrowDown").catch(() => {});
-    await this.safeClick(this.variantFirstOption);
-    await this.safeClick(this.fitVariantsDetails, { force: true });
-    await this.fitVariantsDetails.press("ArrowDown").catch(() => {});
-    await this.safeClick(this.variantFirstOption);
-    await this.safeClick(this.patternVariantsDetails, { force: true });
-    await this.patternVariantsDetails.press("ArrowDown").catch(() => {});
-    await this.safeClick(this.variantFirstOption);
-    await this.cleanupOverlays();
-    await this.quantityInput.fill('10');
-    await this.priceInput.fill('1000');
-    await this.safeClick(this.availableToPurchaseToggle);
-    await this.safeClick(this.variantSaveButton);
-  }
-  getVariantImageText() {
-    return this.variantImage;
-  }
-  async uploadVariantImage(filePath) {
-    // Click the "Choose Your Media" text/button in the variant table row to open the upload drawer
-    await this.safeClick(this.variantImage);
-    await this.page.waitForTimeout(500); // wait for drawer/input to settle
 
+  async addVariantDetails() {
+    const sizeSelect   = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SIZE_SELECT);
+    const colorSelect  = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_COLOR_SELECT);
+    const genderSelect = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_GENDER_SELECT);
+    const fitSelect    = this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_FIT_SELECT);
+    const patternSelect= this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_PATTERN_SELECT);
+    const firstOption  = this.page.getByRole('option').first();
+
+    await this.safeClick(sizeSelect, { force: true });
+    await sizeSelect.press('ArrowDown').catch(() => {});
+    await this.safeClick(firstOption);
+
+    await this.safeClick(colorSelect, { force: true });
+    await colorSelect.press('ArrowDown').catch(() => {});
+    await this.safeClick(firstOption);
+
+    await this.safeClick(genderSelect, { force: true });
+    await genderSelect.press('ArrowDown').catch(() => {});
+    await this.safeClick(firstOption);
+
+    await this.safeClick(fitSelect, { force: true });
+    await fitSelect.press('ArrowDown').catch(() => {});
+    await this.safeClick(firstOption);
+
+    await this.safeClick(patternSelect, { force: true });
+    await patternSelect.press('ArrowDown').catch(() => {});
+    await this.safeClick(firstOption);
+
+    await this.cleanupOverlays();
+    await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_QUANTITY_INPUT).fill('10');
+    await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_PRICE_INPUT).fill('1000');
+    await this.safeClick(
+      this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.AVAILABLE_TO_PURCHASE_TOGGLE)
+    );
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SAVE_BUTTON));
+  }
+
+  async uploadVariantImage(filePath) {
     const responsePromise = this.page.waitForResponse(
-      response => response.url().includes('/api/v1/product-media-upload') && response.status() === 200,
+      (response) =>
+        response.url().includes('/api/v1/product-media-upload') && response.status() === 200,
       { timeout: 30000 }
     ).catch(() => null);
-    await this.uploadMedia.setInputFiles(filePath);
+
+    // Intercept file chooser event to prevent OS dialog crash in headless Firefox
+    const fileChooserPromise = this.page.waitForEvent('filechooser', { timeout: 15000 });
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_IMAGE_BUTTON));
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(filePath);
+
     await responsePromise;
-    await this.page.waitForTimeout(1000); // Allow UI to render the uploaded image
+    await this.page.waitForTimeout(1000);
     await this.cleanupOverlays();
-    await this.safeClick(this.variantSaveButton, { force: true });
+    await this.safeClick(this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.VARIANT_SAVE_BUTTON), { force: true });
+
     // Close the drawer after saving — only click if it is still open
-    const closeTrigger = this.page.locator('[data-scope="dialog"]')
+    const closeTrigger = this.page
+      .locator('[data-scope="dialog"]')
       .filter({ hasText: /Upload|Media/i })
       .locator('[data-part="close-trigger"]')
       .first();
     if (await closeTrigger.isVisible().catch(() => false)) {
       await this.safeClick(closeTrigger).catch(() => {});
     }
-    // Wait for the drawer to fully close
-    await this.page.locator('[data-scope="dialog"][data-part="backdrop"]')
-      .waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-    // Extra cleanup to remove any lingering drawer elements
+    await this.page
+      .locator('[data-scope="dialog"][data-part="backdrop"]')
+      .waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {});
     await this.cleanupOverlays();
     await this.page.waitForTimeout(500);
   }
 
-  // ──────────────────────────────────────────────────────────────────────
-  // Tab 4 continued: Product Discount
-  // ──────────────────────────────────────────────────────────────────────
+  // ── Product Discount ────────────────────────────────────────────────────
+
   async getProductDiscountToggle() {
     await this.cleanupOverlays();
     const isVisible = await this.page.evaluate(() => {
@@ -498,21 +520,19 @@ class ProductsCreatePage {
     });
     return isVisible;
   }
+
   async addDiscount() {
     await this.cleanupOverlays();
-    
-    // Check if discount toggle is already checked (ON)
     const isChecked = await this.page.evaluate(() => {
-      const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-        .find(c => {
-          let parent = c.parentElement;
-          for (let i = 0; i < 8; i++) {
-            if (!parent) break;
-            if (parent.textContent.includes('Discount')) return true;
-            parent = parent.parentElement;
-          }
-          return false;
-        });
+      const cb = Array.from(document.querySelectorAll('input[type="checkbox"]')).find((c) => {
+        let parent = c.parentElement;
+        for (let i = 0; i < 8; i++) {
+          if (!parent) break;
+          if (parent.textContent.includes('Discount')) return true;
+          parent = parent.parentElement;
+        }
+        return false;
+      });
       return cb ? cb.checked : false;
     });
 
@@ -520,39 +540,36 @@ class ProductsCreatePage {
       const clicked = await this.clickSwitchNearText('Discount');
       if (!clicked) {
         await this.page.evaluate(() => {
-          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-            .find(c => {
-              let parent = c.parentElement;
-              for (let i = 0; i < 8; i++) {
-                if (!parent) break;
-                if (parent.textContent.includes('Discount')) return true;
-                parent = parent.parentElement;
-              }
-              return false;
-            });
+          const cb = Array.from(document.querySelectorAll('input[type="checkbox"]')).find((c) => {
+            let parent = c.parentElement;
+            for (let i = 0; i < 8; i++) {
+              if (!parent) break;
+              if (parent.textContent.includes('Discount')) return true;
+              parent = parent.parentElement;
+            }
+            return false;
+          });
           if (cb) cb.click();
         });
       }
       await this.page.waitForTimeout(500);
     }
-    
-    await this.productDiscountInput.fill('100');
+
+    await this.locatorManager.getResilientLocator(PRODUCTS_SELECTORS.DISCOUNT_INPUT).fill('100');
     await this.clickContinueButton();
   }
 
-  // ──────────────────────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════════════
   // Tab 5: Product Options
-  // ──────────────────────────────────────────────────────────────────────
-  getProductOptionsHeader() {
-    return this.productOptionsHeader;
-  }
+  // ════════════════════════════════════════════════════════════════════════
+
   async verifyProductOptionsToggles() {
     const text = await this.page.textContent('body');
     return text.includes('Recommend') && text.includes('Available to sell') && text.includes('Enable Delivery');
   }
+
   async enableAllProductOptionsToggles() {
     await this.cleanupOverlays();
-    // Click all toggle switches on the Product Options tab via JS
     await this.page.evaluate(() => {
       const toggleTexts = ['Recommend', 'Available to sell', 'Enable Delivery'];
       for (const text of toggleTexts) {
@@ -573,4 +590,5 @@ class ProductsCreatePage {
     await this.page.waitForTimeout(300);
   }
 }
+
 export { ProductsCreatePage };

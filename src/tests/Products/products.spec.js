@@ -323,18 +323,17 @@ test.describe("Filters", () => {
     });
   });
 
-  test("TC021: Search with special characters (@#$%) - Known Bug", async () => {
-    // Search the special characters
-    await test.step("Search with special Character", async () => {
-      await productsPage.searchWithSpecialCharacter();
-    });
-    await test.step("Assert the filtered values", async () => {
-      const filteredProducts = await productsPage.getAllProductsData();
-      for (let product of filteredProducts) {
-        expect(product.name).toContain("_");
-      }
-    });
+  test("TC021: Search with special characters (@#$%)", async () => {
+  await test.step("Search using only special characters", async () => {
+    await productsPage.searchWithSpecialCharacter();
   });
+
+  await test.step("Verify validation error message is displayed", async () => {
+    await expect(
+      productsPage.getSearchValidationMessage()
+    ).toBeVisible();
+  });
+});
 
   test("TC022: Search with empty string", async () => {
     await test.step("Search with empty String", async () => {

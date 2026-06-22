@@ -20,7 +20,9 @@
 import { test as base, expect } from "@playwright/test";
 import { ProductsPage } from "../../pages/Products/ProductsPage";
 import { ProductsEditPage } from "../../pages/Products/ProductsEditPage";
+import { ProductsCreatePage } from "../../pages/Products/ProductsCreatePage";
 import * as allure from "allure-js-commons";
+import path from "path";
 
 // ─── Local fixture: ignores non-blocking font-download browser errors ─────────
 // The app loads Google Fonts which may fail in restricted network environments.
@@ -58,14 +60,158 @@ const test = base.extend({
 });
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-// Product created by TC:089 (Shirt 1781259943797 with Allen Solly brand)
-const EDIT_PRODUCT_ID = 583;
+let EDIT_PRODUCT_ID;
+
+// Helper to create a product using the exact TC:089 logic
+async function createProductForTesting(page) {
+  const productsPage = new ProductsPage(page);
+  const productsCreatePage = new ProductsCreatePage(page);
+  
+  await page.goto("/");
+  await test.step("Navigate to the Product Menu", async () => {
+    await productsPage.navigateToProducts();
+  });
+  await test.step("Verify the Add product button is visible ", async () => {
+    await expect(productsPage.getAddProductButton()).toBeVisible();
+  });
+  await test.step("Verify the Add product button is working ", async () => {
+    await productsPage.navigateToAddProducts();
+  });
+  await test.step("Verify that user is in Add product page", async () => {
+    await page.waitForLoadState("networkidle");
+    await expect(productsCreatePage.getAddProductHeader()).toBeVisible();
+  });
+
+  // Tab 1: Category & Media
+  await test.step("Upload product image", async () => {
+    const filePath = path.join(
+      process.cwd(),
+      "src",
+      "test-data",
+      "images",
+      "Product-Shirt-1.jpeg"
+    );
+    await productsCreatePage.uploadProductImage(filePath);
+  });
+  await test.step("Verify image uploaded", async () => {
+    await expect(productsCreatePage.getUploadedProductImage()).toBeVisible();
+  });
+  await test.step("Choose a Category", async () => {
+    await productsCreatePage.chooseCategory("Fashion & Apparel");
+  });
+  await test.step("Click continue to Identity tab", async () => {
+    await productsCreatePage.clickContinueButton();
+  });
+
+  // Tab 2: Identity
+  await test.step("Verify user is in Tab 2", async () => {
+    await expect(productsCreatePage.getProductIdentityHeader()).toBeVisible();
+  });
+  await test.step("Add Product Name", async () => {
+    await productsCreatePage.fillProductName();
+  });
+  await test.step("Toggle on the Brand Name Toggle", async () => {
+    await productsCreatePage.switchBrandNameToggle();
+  });
+  await test.step("Fill brand name", async () => {
+    await productsCreatePage.fillBrandName();
+  });
+  await test.step("Click continue to Details tab", async () => {
+    await productsCreatePage.clickContinueButton();
+  });
+
+  // Tab 3: Details
+  await test.step("Verify user is in Tab 3", async () => {
+    await expect(productsCreatePage.getproductDetailsHeader()).toBeVisible();
+  });
+  await test.step("Fill All the Details in product details tab", async () => {
+    await productsCreatePage.fillProductDetails();
+  });
+  await test.step("Click continue to Attributes tab", async () => {
+    await productsCreatePage.clickContinueButton();
+  });
+
+  // Tab 4: Attributes
+  await test.step("Verify user is in Tab 4", async () => {
+    await expect(productsCreatePage.getproductsAttributeHeader()).toBeVisible();
+  });
+  await test.step("Switch on the product Variant toggle", async () => {
+    await productsCreatePage.switchVariantToggle();
+  });
+  await test.step("Click the Variant type button", async () => {
+    await productsCreatePage.clickVariantType();
+  });
+  await test.step("Select and save variants", async () => {
+    await productsCreatePage.selectVariant();
+  });
+  await test.step("Click the Add a Variant button", async () => {
+    await productsCreatePage.clickAddVariantButton();
+  });
+  await test.step("Add All the variant details", async () => {
+    await productsCreatePage.addVariantDetails();
+    const filePath = path.join(
+      process.cwd(),
+      "src",
+      "test-data",
+      "images",
+      "Variant-Image.jpeg"
+    );
+    await productsCreatePage.uploadVariantImage(filePath);
+  });
+  await test.step("Add the product discount", async () => {
+    await productsCreatePage.addDiscount();
+  });
+
+  // Tab 5: Options
+  await test.step("Verify user is in Tab 5", async () => {
+    await expect(productsCreatePage.getProductOptionsHeader()).toBeVisible();
+  });
+  await test.step("Enable all product options toggles", async () => {
+    await productsCreatePage.enableAllProductOptionsToggles();
+  });
+  await test.step("Save the Product", async () => {
+    await productsCreatePage.clickContinueButton();
+  });
+
+  // Wait for redirect to products list page
+  await test.step("Wait for redirect to products list page", async () => {
+    await page.waitForURL(/\/admin\/product/, { timeout: 20000 });
+  });
+
+  const name = productsCreatePage._productName;
+
+  // Search for the newly created product to get its ID
+  await test.step("Search for the created product in list", async () => {
+    await productsPage.search(name);
+  });
+
+  await test.step("Click the created product to open details", async () => {
+    await productsPage.clickFirstProduct();
+  });
+
+  await test.step("Wait for navigation to details page", async () => {
+    await page.waitForURL(/\/admin\/product\/\d+/, { timeout: 15000 });
+  });
+
+  const url = page.url();
+  const id = url.split("/").pop();
+  console.log(`Successfully created test product ID: ${id}, Name: ${name}`);
+  return { id, name };
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SUITE 1: Navigation & Page Load
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product Regression Suite", () => {
   test.describe.configure({ mode: "serial" });
+
+  test("Setup: Dynamically create target product for editing", async ({ page }) => {
+    test.setTimeout(180000);
+    allure.story("Edit Product - Setup");
+    const product = await createProductForTesting(page);
+    EDIT_PRODUCT_ID = product.id;
+    expect(EDIT_PRODUCT_ID).toBeDefined();
+  });
 
   test.describe("Edit Product — Navigation & Page Load", () => {
   test.describe.configure({ mode: "serial" });
