@@ -57,7 +57,8 @@ export const DASHBOARD_SELECTORS = {
     // NEW: Target the Delete button using its aria-label
     LOGO_DELETE_BUTTON: { 
       role: { role: 'button', name: /delete/i },
-      locator: 'button[aria-label="Delete"]' 
+      // locator: 'button[aria-label="Delete"]'
+      locator: 'div:has(img[alt="Store Logo"]) button[aria-label="Delete"]' 
     },
     // The red 'Delete' button inside the confirmation popup
     CONFIRM_DELETE_BUTTON: {
@@ -92,6 +93,10 @@ export const DASHBOARD_SELECTORS = {
     PHONE_LABEL: { 
       // This finds the specific label that sits right next to the phone input
       locator: 'div:has(input[name="storePhoneNumber"]) > label' 
+    },
+    // Inside DASHBOARD_SELECTORS.STORE_FORM
+    CATEGORY_INPUT: { 
+      locator: 'div[role="group"]:has(label:has-text("Store Categories")) input[role="combobox"]' 
     },
   }
 };

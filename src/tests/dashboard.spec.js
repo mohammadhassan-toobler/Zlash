@@ -5,7 +5,7 @@ import { DASHBOARD_SELECTORS } from '../config/DashboardSelectors';
 import * as allure from "allure-js-commons";
 
 test.beforeAll(() => {
-  allure.feature("Products Module");
+  allure.feature("Dasboard Module");
 });
 
 test.describe('Dashboard - Full Regression Suite', () => {
