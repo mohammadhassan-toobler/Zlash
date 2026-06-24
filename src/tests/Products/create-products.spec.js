@@ -310,7 +310,6 @@ test.describe("Create Products", () => {
   });
 });
 test.describe("Full Multi-Tab Happy Path Lifecycle Validation", () => {
-  test.describe.configure({ mode: "serial" });
   test.beforeEach(async ({ page }) => {
     allure.story("Create Product");
     allure.owner("Hassan");

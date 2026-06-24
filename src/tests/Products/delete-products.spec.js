@@ -164,7 +164,39 @@ test.beforeAll(() => {
 });
 
 test.describe("Delete Product Regression Suite", () => {
-  test.describe.configure({ mode: "serial" });
+  let context, setupPage;
+
+  test.beforeAll(async ({ browser }) => {
+    test.setTimeout(180000);
+    context = await browser.newContext({
+      storageState: "storageState.json",
+      baseURL: process.env.BASE_URL,
+    });
+    setupPage = await context.newPage();
+    
+    const productsPageSetup = new ProductsPage(setupPage);
+    
+    // Store row count before deletion testing begins
+    await setupPage.goto("/");
+    await productsPageSetup.navigateToProducts();
+    await setupPage.waitForURL(/\/admin\/product/);
+    await setupPage.waitForLoadState("networkidle").catch(() => {});
+    await expect(productsPageSetup.getAddProductButton()).toBeVisible({ timeout: 20000 });
+    await productsPageSetup.getAllProductRows().first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    initialRowCount = await productsPageSetup.getAllRowCount();
+    console.log(`Initial product row count: ${initialRowCount}`);
+
+    // Create the test product
+    const product = await createProductForTesting(setupPage);
+    createdProductId = product.id;
+    createdProductName = product.name;
+  });
+
+  test.afterAll(async () => {
+    if (context) {
+      await context.close();
+    }
+  });
 
   test.beforeEach(async ({ page }) => {
     allure.owner("Hassan");
@@ -172,29 +204,6 @@ test.describe("Delete Product Regression Suite", () => {
     productsCreatePage = new ProductsCreatePage(page);
     productsEditPage = new ProductsEditPage(page);
     productsDeletePage = new ProductsDeletePage(page);
-  });
-
-  test("Setup: Dynamically create target product for deletion", async ({ page }) => {
-    test.setTimeout(180000);
-    allure.story("Delete Product - Setup");
-    
-    // Store row count before deletion testing begins
-    await page.goto("/");
-    await productsPage.navigateToProducts();
-    await page.waitForURL(/\/admin\/product/);
-    await page.waitForLoadState("networkidle").catch(() => {});
-    await expect(productsPage.getAddProductButton()).toBeVisible({ timeout: 20000 });
-    await productsPage.getAllProductRows().first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-    initialRowCount = await productsPage.getAllRowCount();
-    console.log(`Initial product row count: ${initialRowCount}`);
-
-    // Create the test product
-    const product = await createProductForTesting(page);
-    createdProductId = product.id;
-    createdProductName = product.name;
-    
-    expect(createdProductId).toBeDefined();
-    expect(createdProductName).toBeDefined();
   });
 
   test("TC:117 - Verify that the Delete section and button are visible on Tab 5", async ({ page }) => {

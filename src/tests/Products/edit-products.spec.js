@@ -53,7 +53,8 @@ const test = base.extend({
     await use(page);
     if (consoleErrors.length > 0) {
       throw new Error(
-        `NON-BLOCKING REGRESSION ISSUE: ${consoleErrors.length} console error(s): ${consoleErrors.join(" | ")}`,
+        `NON-BLOCKING REGRESSION ISSUE: ${consoleErrors.length} console error(s):\n` +
+        consoleErrors.map((err, i) => `  ${i + 1}. ${err}`).join('\n')
       );
     }
   },
@@ -203,18 +204,26 @@ async function createProductForTesting(page) {
 // SUITE 1: Navigation & Page Load
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product Regression Suite", () => {
-  test.describe.configure({ mode: "serial" });
+  let context, setupPage;
 
-  test("Setup: Dynamically create target product for editing", async ({ page }) => {
+  test.beforeAll(async ({ browser }) => {
     test.setTimeout(180000);
-    allure.story("Edit Product - Setup");
-    const product = await createProductForTesting(page);
+    context = await browser.newContext({
+      storageState: "storageState.json",
+      baseURL: process.env.BASE_URL,
+    });
+    setupPage = await context.newPage();
+    const product = await createProductForTesting(setupPage);
     EDIT_PRODUCT_ID = product.id;
-    expect(EDIT_PRODUCT_ID).toBeDefined();
+  });
+
+  test.afterAll(async () => {
+    if (context) {
+      await context.close();
+    }
   });
 
   test.describe("Edit Product — Navigation & Page Load", () => {
-  test.describe.configure({ mode: "serial" });
 
   test("TC:090 - Verify that clicking 'Edit Product' on the product detail page navigates to the edit wizard", async ({ page }) => {
     allure.story("Edit Product");
@@ -311,7 +320,6 @@ test.describe("Edit Product Regression Suite", () => {
 // SUITE 2: Tab 1 — Product Category (Read-only)
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product — Tab 1: Product Category", () => {
-  test.describe.configure({ mode: "serial" });
 
   test("TC:093 - Verify that Tab 1 shows the media upload section", async ({ page }) => {
     allure.story("Edit Product");
@@ -378,7 +386,6 @@ test.describe("Edit Product — Tab 1: Product Category", () => {
 // SUITE 3: Tab 2 — Product Identity
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product — Tab 2: Product Identity", () => {
-  test.describe.configure({ mode: "serial" });
 
   test("TC:097 - Verify that Tab 2 is pre-populated with the existing product name", async ({ page }) => {
     allure.story("Edit Product");
@@ -506,7 +513,6 @@ test.describe("Edit Product — Tab 2: Product Identity", () => {
 // SUITE 4: Tab 3 — Product Details
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product — Tab 3: Product Details", () => {
-  test.describe.configure({ mode: "serial" });
 
   test("TC:102 - Verify that Tab 3 is pre-populated with the existing product description", async ({ page }) => {
     allure.story("Edit Product");
@@ -656,7 +662,6 @@ test.describe("Edit Product — Tab 3: Product Details", () => {
 // SUITE 5: Tab 4 — Product Attributes (Variant Edit Drawer)
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product — Tab 4: Product Attributes", () => {
-  test.describe.configure({ mode: "serial" });
 
   test("TC:106 - Verify Tab 4 displays the 'Set the Attributes of your Product' heading", async ({ page }) => {
     allure.story("Edit Product");
@@ -867,7 +872,6 @@ test.describe("Edit Product — Tab 4: Product Attributes", () => {
 // SUITE 6: Tab 5 — Product Options & Save
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product — Tab 5: Product Options", () => {
-  test.describe.configure({ mode: "serial" });
 
   test("TC:112 - Verify Tab 5 shows the 'Set the Store Options' heading", async ({ page }) => {
     allure.story("Edit Product");
@@ -952,7 +956,6 @@ test.describe("Edit Product — Tab 5: Product Options", () => {
 // SUITE 7: Full Happy-Path Edit Lifecycle
 // ═════════════════════════════════════════════════════════════════════════════
 test.describe("Edit Product — Full Happy Path", () => {
-  test.describe.configure({ mode: "serial" });
 
   test("TC:116 - Verify that a user can successfully edit a product by navigating all 5 tabs and saving", async ({ page }) => {
     allure.story("Edit Product - Happy Path");

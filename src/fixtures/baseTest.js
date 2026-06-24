@@ -30,8 +30,8 @@ export const test = base.extend({
     if (consoleErrors.length > 0) {
         // We throw a specific error type so the CI/CD log is clear
         throw new Error(
-        `NON-BLOCKING REGRESSION ISSUE: UI passed, but ${consoleErrors.length} console errors were detected. ` +
-        `These may indicate memory leaks or broken secondary features.`
+        `NON-BLOCKING REGRESSION ISSUE: UI passed, but ${consoleErrors.length} console errors were detected:\n` +
+        consoleErrors.map((err, i) => `  ${i + 1}. ${err}`).join('\n')
         );
     }
   },
